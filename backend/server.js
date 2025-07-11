@@ -26,7 +26,7 @@ app.use(cors({
 }));
 
 // ✅ Preflight request handler
-app.options('*', cors({
+app.options('/*', cors({
   origin: 'https://assessment-task-five.vercel.app',
   credentials: true,
 }));
