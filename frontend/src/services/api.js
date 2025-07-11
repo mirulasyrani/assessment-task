@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://assessment-task-five.vercel.app/', 
+  baseURL: 'https://assessment-task-1.onrender.com/', 
   headers: {
     'Content-Type': 'application/json',
   },
