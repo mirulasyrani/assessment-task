@@ -45,12 +45,12 @@ try {
   console.error('❌ Failed to mount /api/auth:', err.stack || err);
 }
 
-try {
-  app.use('/api/candidates', candidateRoutes);
-  console.log('✅ Mounted /api/candidates');
-} catch (err) {
-  console.error('❌ Failed to mount /api/candidates:', err.stack || err);
-}
+//try {
+//  app.use('/api/candidates', candidateRoutes);
+//  console.log('✅ Mounted /api/candidates');
+//} catch (err) {
+//  console.error('❌ Failed to mount /api/candidates:', err.stack || err);
+//}
 
 // ✅ Global error handler (optional, for other uncaught errors)
 app.use((err, req, res, next) => {
