@@ -23,8 +23,7 @@ router.get('/filter', filterCandidates);
 
 // ✅ Zod validation middleware applied here:
 router.post('/', validate(candidateSchema), createCandidate);
-router.put('/:id', validate(candidateSchema), updateCandidate);
-
-router.delete('/:id', deleteCandidate);
+router.put('/:id', validate(candidateSchema), updateCandidate); 
+router.delete('/:id', deleteCandidate);                       
 
 module.exports = router;
