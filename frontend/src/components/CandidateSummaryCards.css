@@ -1,0 +1,38 @@
+.summary-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #f5f5f5;
+  padding: 12px 16px;
+  border-radius: 8px;
+  min-width: 120px;
+  text-align: center;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.card.total {
+  background: #dfe6e9;
+}
+.card.applied {
+  background: #74b9ff;
+}
+.card.screening {
+  background: #81ecec;
+}
+.card.interview {
+  background: #ffeaa7;
+}
+.card.offer {
+  background: #fdcb6e;
+}
+.card.hired {
+  background: #55efc4;
+}
+.card.rejected {
+  background: #fab1a0;
+}

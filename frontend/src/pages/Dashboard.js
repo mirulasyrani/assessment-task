@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion'; // ✅ 1. Import motion
+import { motion } from 'framer-motion';
 import API from '../services/api';
 import CandidateForm from '../components/CandidateForm';
 import Layout from '../components/Layout';
@@ -7,6 +7,7 @@ import Loader from '../components/Loader';
 import Modal from '../components/Modal';
 import { formatDate } from '../utils/formatDate';
 import { toast } from 'react-toastify';
+import CandidateSummaryCards from '../components/CandidateSummaryCards'; // ✅ import summary cards
 
 const Dashboard = () => {
   const [candidates, setCandidates] = useState([]);
@@ -49,7 +50,6 @@ const Dashboard = () => {
     const debounce = setTimeout(() => {
       fetchCandidates();
     }, 300);
-
     return () => clearTimeout(debounce);
   }, [fetchCandidates]);
 
@@ -83,7 +83,6 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      {/* ✅ 2. Animate the whole dashboard content */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -92,6 +91,13 @@ const Dashboard = () => {
       >
         <h2>Dashboard</h2>
 
+        {/* ✅ Summary cards */}
+        <CandidateSummaryCards
+          total={candidates.length}
+          statusCounts={statusCounts}
+        />
+
+        {/* ✅ Status badges */}
         <div style={{ margin: '16px 0', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
           {['applied', 'screening', 'interview', 'offer', 'hired', 'rejected'].map((status) => (
             <span
@@ -146,23 +152,21 @@ const Dashboard = () => {
         ) : (
           <ul>
             {candidates.map((c) => (
-                <li className="card" key={c.id}>
+              <li className="card" key={c.id}>
                 <strong>{c.name}</strong> - {c.position}
                 <span className={`status-badge status-${c.status}`}>{c.status}</span><br />
-
                 <small>📧 Email: {c.email}</small><br />
                 {c.phone && <small>📞 Phone: {c.phone}</small>}<br />
                 {c.experience_years !== null && (
-                    <small>💼 Experience: {c.experience_years} {c.experience_years === 1 ? 'year' : 'years'}</small>
+                  <small>💼 Experience: {c.experience_years} {c.experience_years === 1 ? 'year' : 'years'}</small>
                 )}<br />
                 <small>🛠 Skills: {c.skills}</small><br />
                 <small>📅 Added: {formatDate(c.created_at)}</small><br /><br />
-
                 <div className="card-actions">
-                    <button onClick={() => handleEdit(c)} title="Edit">✏️</button>
-                    <button onClick={() => handleDelete(c.id)} title="Delete">🗑️</button>
+                  <button onClick={() => handleEdit(c)} title="Edit">✏️</button>
+                  <button onClick={() => handleDelete(c.id)} title="Delete">🗑️</button>
                 </div>
-                </li>
+              </li>
             ))}
           </ul>
         )}
