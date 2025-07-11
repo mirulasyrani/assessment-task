@@ -51,7 +51,7 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         await API.post('/candidates', form);
         toast.success('Candidate added');
 
-        // Reset form after successful add
+        // Reset form
         setForm({
           name: '',
           email: '',
@@ -68,12 +68,21 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
     } catch (err) {
       if (err?.name === 'ZodError' && Array.isArray(err.errors)) {
         const fieldErrors = {};
+        const messages = [];
+
         err.errors.forEach((e) => {
           const message = e?.message || 'Invalid input';
           const field = e?.path?.[0] || 'unknown';
           fieldErrors[field] = message;
+          messages.push(`• ${message}`);
         });
+
         setErrors(fieldErrors);
+
+        toast.error(`Please fix the following:\n${messages.join('\n')}`, {
+          autoClose: false,
+          style: { whiteSpace: 'pre-line' },
+        });
       } else {
         console.error('🔥 Unexpected error:', err);
         toast.error('Something went wrong');
