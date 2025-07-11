@@ -1,0 +1,75 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f6f9fc;
+  margin: 0;
+  color: #1a202c;
+}
+
+h2 {
+  margin-bottom: 20px;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 14px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+button {
+  padding: 10px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+button + button {
+  margin-left: 8px;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+li.card {
+  background: white;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: white;
+  margin-left: 8px;
+  text-transform: capitalize;
+}
+
+.status-applied { background-color: #6c757d; }
+.status-screening { background-color: #17a2b8; }
+.status-interview { background-color: #ffc107; }
+.status-offer { background-color: #007bff; }
+.status-hired { background-color: #28a745; }
+.status-rejected { background-color: #dc3545; }
+
+@media (max-width: 600px) {
+  input, textarea, select, button {
+    font-size: 14px;
+  }
+}

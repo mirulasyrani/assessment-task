@@ -1,0 +1,216 @@
+/* 🌐 NAVIGATION BAR */
+.nav {
+  background-color: #1f2937;
+  padding: 12px 16px;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 👋 WELCOME MESSAGE */
+.welcome-msg {
+  font-weight: 500;
+  color: #facc15;
+  margin-right: auto;
+}
+
+/* 🧭 NAV LINKS */
+.nav a,
+.nav button {
+  all: unset;
+  font-size: 16px;
+  cursor: pointer;
+  color: white;
+}
+
+.nav a:hover,
+.nav button:hover {
+  text-decoration: underline;
+}
+
+/* 🚪 NAV BUTTON STYLE */
+.nav-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  background-color: #3b82f6;
+  color: white;
+  font-weight: 500;
+  border: none;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.nav-btn:hover {
+  background-color: #2563eb;
+}
+
+.nav-btn:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
+
+/* 📄 PAGE WRAPPER */
+.page-wrapper {
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* 🗂 FILTER BUTTONS */
+.filter-btn {
+  padding: 6px 12px;
+  margin: 4px 4px 4px 0;
+  background-color: #e5e7eb;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* 📦 CARD STYLING */
+.card {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ✏️ ACTION BUTTONS */
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.card-actions button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.card-actions button:hover {
+  transform: scale(1.1);
+}
+
+/* 🏷 STATUS BADGES */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  color: white;
+  margin-left: 8px;
+}
+
+.status-applied {
+  background-color: #6b7280;
+}
+
+.status-screening {
+  background-color: #3b82f6;
+}
+
+.status-interview {
+  background-color: #f97316;
+}
+
+.status-offer {
+  background-color: #8b5cf6;
+}
+
+.status-hired {
+  background-color: #10b981;
+}
+
+.status-rejected {
+  background-color: #ef4444;
+}
+
+/* 🌙 DARK MODE */
+body.dark {
+  background-color: #111827;
+  color: #f3f4f6;
+}
+
+body.dark .nav {
+  background-color: #0f172a;
+}
+
+body.dark .card {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+body.dark .filter-btn {
+  background-color: #374151;
+  color: #e5e7eb;
+}
+
+body.dark .filter-btn.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+body.dark .status-badge {
+  opacity: 0.9;
+}
+
+/* 📱 RESPONSIVE STYLES */
+@media (max-width: 480px) {
+  .page-wrapper {
+    padding: 12px;
+  }
+
+  .nav a,
+  .nav button,
+  .nav-btn {
+    font-size: 14px;
+  }
+
+  .status-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  /* 🌓 DARK MODE: INPUTS, SELECTS, TEXTAREAS */
+    body.dark input,
+    body.dark select,
+    body.dark textarea {
+    background-color: #1e293b;
+    color: #f3f4f6;
+    border: 1px solid #334155;
+    }
+
+    body.dark input::placeholder,
+    body.dark textarea::placeholder {
+    color: #94a3b8;
+    }
+
+    /* 🌓 DARK NAV BUTTONS */
+    body.dark .nav-btn {
+    background-color: #334155;
+    }
+
+    body.dark .nav-btn:hover {
+    background-color: #2563eb;
+    }
+
+}
