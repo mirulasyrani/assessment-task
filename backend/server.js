@@ -11,7 +11,10 @@ console.log('🟢 Starting server setup...');
 app.set('trust proxy', 1);
 
 // ✅ Setup CORS
-const allowedOrigins = ['https://assessment-task-five.vercel.app'];
+const allowedOrigins = [
+  'https://assessment-task-five.vercel.app',
+  'https://assessment-task-git-main-mirulasyranis-projects.vercel.app'
+];
 
 app.use(cors({
   origin: function (origin, callback) {
