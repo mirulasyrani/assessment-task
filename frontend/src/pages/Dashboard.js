@@ -7,7 +7,7 @@ import Loader from '../components/Loader';
 import Modal from '../components/Modal';
 import { formatDate } from '../utils/formatDate';
 import { toast } from 'react-toastify';
-import CandidateSummaryCards from '../components/CandidateSummaryCards'; // ✅ import summary cards
+import CandidateSummaryCards from '../components/CandidateSummaryCards';
 
 const Dashboard = () => {
   const [candidates, setCandidates] = useState([]);
@@ -91,24 +91,10 @@ const Dashboard = () => {
       >
         <h2>Dashboard</h2>
 
-        {/* ✅ Summary cards */}
         <CandidateSummaryCards
           total={candidates.length}
           statusCounts={statusCounts}
         />
-
-        {/* ✅ Status badges */}
-        <div style={{ margin: '16px 0', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-          {['applied', 'screening', 'interview', 'offer', 'hired', 'rejected'].map((status) => (
-            <span
-              key={status}
-              className={`status-badge status-${status}`}
-              style={{ fontSize: '13px' }}
-            >
-              {status}: {statusCounts[status] || 0}
-            </span>
-          ))}
-        </div>
 
         <input
           type="text"
@@ -153,8 +139,28 @@ const Dashboard = () => {
           <ul>
             {candidates.map((c) => (
               <li className="card" key={c.id}>
-                <strong>{c.name}</strong> - {c.position}
-                <span className={`status-badge status-${c.status}`}>{c.status}</span><br />
+                <strong>{c.name}</strong> - {c.position}<br />
+
+                <select
+                  value={c.status}
+                  onChange={async (e) => {
+                    const newStatus = e.target.value;
+                    const updatedCandidate = { ...c, status: newStatus };
+                    try {
+                      await API.put(`/candidates/${c.id}`, updatedCandidate);
+                      toast.success('Status updated!');
+                      fetchCandidates();
+                    } catch (err) {
+                      console.error('🔥 Error updating status:', err);
+                      toast.error('Failed to update status');
+                    }
+                  }}
+                >
+                  {['applied', 'screening', 'interview', 'offer', 'hired', 'rejected'].map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select><br />
+
                 <small>📧 Email: {c.email}</small><br />
                 {c.phone && <small>📞 Phone: {c.phone}</small>}<br />
                 {c.experience_years !== null && (
