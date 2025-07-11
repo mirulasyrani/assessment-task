@@ -54,14 +54,23 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
 
       onSubmitSuccess();
     } catch (err) {
+      // ✅ Check if it's a Zod validation error
       if (err.name === 'ZodError') {
         const fieldErrors = {};
-        err.errors.forEach((e) => {
+        (err.errors || []).forEach((e) => {
           const message = e?.message || 'Invalid input';
-          fieldErrors[e?.path?.[0] || 'unknown'] = message;
+          const field = e?.path?.[0] || 'unknown';
+          fieldErrors[field] = message;
         });
         setErrors(fieldErrors);
+      } else if (err.response?.data?.errors) {
+        // ✅ Handle backend validation errors gracefully
+        (err.response.data.errors || []).forEach((e) => {
+          const message = e?.msg || 'Invalid input';
+          toast.error(message);
+        });
       } else {
+        console.error('🔥 Unexpected error:', err);
         toast.error('Something went wrong');
       }
     } finally {
