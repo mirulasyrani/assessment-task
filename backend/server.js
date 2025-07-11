@@ -2,9 +2,6 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const authRoutes = require('./routes/auth');
-const candidateRoutes = require('./routes/candidates');
-
 const app = express();
 
 // Log startup
@@ -37,20 +34,22 @@ app.options('*', cors({
 // Body parser
 app.use(express.json());
 
-// ✅ Mount routes with error logging
+// ✅ Mount routes with isolated error catching
 try {
+  const authRoutes = require('./routes/auth');
   app.use('/api/auth', authRoutes);
   console.log('✅ Mounted /api/auth');
 } catch (err) {
   console.error('❌ Failed to mount /api/auth:', err.stack || err);
 }
 
-//try {
-//  app.use('/api/candidates', candidateRoutes);
-//  console.log('✅ Mounted /api/candidates');
-//} catch (err) {
-//  console.error('❌ Failed to mount /api/candidates:', err.stack || err);
-//}
+try {
+  const candidateRoutes = require('./routes/candidates');
+  app.use('/api/candidates', candidateRoutes);
+  console.log('✅ Mounted /api/candidates');
+} catch (err) {
+  console.error('❌ Failed to mount /api/candidates:', err.stack || err);
+}
 
 // ✅ Global error handler (optional, for other uncaught errors)
 app.use((err, req, res, next) => {
