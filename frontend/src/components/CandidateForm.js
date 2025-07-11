@@ -38,38 +38,50 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
     }
   };
 
-    const handleSubmit = async (e) => {
-     e.preventDefault();
-     setLoading(true);
-     try {
-        candidateSchema.parse(form);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      candidateSchema.parse(form);
 
-        if (initial) {
-          await API.put(`/candidates/${initial.id}`, form);
-          toast.success('Candidate updated');
-          } else {
-          await API.post('/candidates', form);
-          toast.success('Candidate added');
-          }
+      if (initial) {
+        await API.put(`/candidates/${initial.id}`, form);
+        toast.success('Candidate updated');
+      } else {
+        await API.post('/candidates', form);
+        toast.success('Candidate added');
 
-        onSubmitSuccess();
-        } catch (err) {
-           if (err?.name === 'ZodError' && Array.isArray(err.errors)) {
-           const fieldErrors = {};
-           err.errors.forEach((e) => {
-             const message = e?.message || 'Invalid input';
-             const field = e?.path?.[0] || 'unknown';
-             fieldErrors[field] = message;
-            });
+        // Reset form after successful add
+        setForm({
+          name: '',
+          email: '',
+          phone: '',
+          position: '',
+          skills: '',
+          experience_years: '',
+          status: 'applied',
+          notes: ''
+        });
+      }
+
+      onSubmitSuccess();
+    } catch (err) {
+      if (err?.name === 'ZodError' && Array.isArray(err.errors)) {
+        const fieldErrors = {};
+        err.errors.forEach((e) => {
+          const message = e?.message || 'Invalid input';
+          const field = e?.path?.[0] || 'unknown';
+          fieldErrors[field] = message;
+        });
         setErrors(fieldErrors);
-          } else {
-           console.error('🔥 Unexpected error:', err);
-           toast.error('Something went wrong');
-            }
-        } finally {
-           setLoading(false);
-         }
-        };
+      } else {
+        console.error('🔥 Unexpected error:', err);
+        toast.error('Something went wrong');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit}>
