@@ -146,12 +146,14 @@ const Dashboard = () => {
                   onChange={async (e) => {
                     const newStatus = e.target.value;
                     const updatedCandidate = {
-                      name: c.name,
-                      email: c.email,
-                      phone: c.phone,
-                      position: c.position,
-                      skills: c.skills,
-                      experience_years: c.experience_years,
+                      name: c.name || '',
+                      email: c.email || '',
+                      phone: c.phone || '',
+                      position: c.position || '',
+                      skills: c.skills || '',
+                      experience_years: typeof c.experience_years === 'number'
+                        ? c.experience_years
+                        : parseInt(c.experience_years) || 0,
                       notes: c.notes || '',
                       status: newStatus,
                     };
