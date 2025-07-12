@@ -145,17 +145,21 @@ const Dashboard = () => {
                   value={c.status}
                   onChange={async (e) => {
                     const newStatus = e.target.value;
+
                     const updatedCandidate = {
-                      name: c.name || '',
-                      email: c.email || '',
-                      phone: c.phone || '',
-                      position: c.position || '',
-                      skills: c.skills || '',
-                      experience_years: typeof c.experience_years === 'number'
-                        ? c.experience_years
-                        : parseInt(c.experience_years) || 0,
-                      notes: c.notes || '',
+                      name: c.name ?? '',
+                      email: c.email ?? '',
+                      phone: c.phone ?? '',
+                      position: c.position ?? '',
+                      skills: c.skills ?? '',
+                      experience_years:
+                        c.experience_years !== null &&
+                        c.experience_years !== undefined &&
+                        !isNaN(Number(c.experience_years))
+                          ? Number(c.experience_years)
+                          : 0,
                       status: newStatus,
+                      notes: c.notes ?? '',
                     };
 
                     try {
@@ -163,7 +167,7 @@ const Dashboard = () => {
                       toast.success('Status updated!');
                       fetchCandidates();
                     } catch (err) {
-                      console.error('🔥 Error updating status:', err);
+                      console.error('🔥 Error updating status:', err?.response?.data || err);
                       toast.error('Failed to update status');
                     }
                   }}
