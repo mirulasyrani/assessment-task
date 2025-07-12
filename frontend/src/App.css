@@ -1,3 +1,4 @@
+/* General Body Styling */
 body {
   font-family: 'Segoe UI', sans-serif;
   background-color: #f6f9fc;
@@ -19,6 +20,7 @@ input, textarea, select {
   box-sizing: border-box;
 }
 
+/* General Button Styling */
 button {
   padding: 10px 16px;
   background-color: #007bff;
@@ -38,6 +40,47 @@ button + button {
   margin-left: 8px;
 }
 
+/* Filter Button Styling */
+.filter-btn {
+  padding: 8px 14px;
+  border: 1px solid #ccc;
+  background-color: #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.filter-btn:hover {
+  background-color: #cbd5e0;
+}
+
+.filter-btn.active {
+  background-color: #3182ce;
+  color: white;
+  border-color: #3182ce;
+}
+
+/* Dashboard Controls Layout */
+.dashboard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dashboard-controls input {
+  flex: 1 1 300px;
+  margin: 0;
+}
+
+.dashboard-controls select {
+  width: auto;
+  padding: 8px 12px;
+}
+
+/* Candidate List Styling */
 ul {
   padding: 0;
   list-style: none;
@@ -51,6 +94,29 @@ li.card {
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
+li.card small {
+  display: block;
+  margin: 2px 0;
+  color: #555;
+  font-size: 14px;
+}
+
+/* Card Action Buttons */
+.card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.card-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+}
+
+/* Status Badge Colors */
 .status-badge {
   display: inline-block;
   padding: 4px 8px;
@@ -68,8 +134,23 @@ li.card {
 .status-hired { background-color: #28a745; }
 .status-rejected { background-color: #dc3545; }
 
+/* Responsive Styling */
 @media (max-width: 600px) {
   input, textarea, select, button {
     font-size: 14px;
+  }
+
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-btn {
+    flex: 1 1 100%;
+    margin-bottom: 6px;
+  }
+
+  .card-actions {
+    justify-content: center;
   }
 }
