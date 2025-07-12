@@ -1,177 +1,79 @@
 
-# 🧑‍💼 Recruitment Agency Tracker
+# Candidate Tracker Dashboard
 
-A full-stack recruitment management app where recruiters can manage candidates across hiring stages.
-
----
-
-## 🌐 Live Demo
-
-- 🔗 Frontend: [https://your-frontend.vercel.app](https://your-frontend.vercel.app)
-- 🔗 Backend: [https://your-backend-service.onrender.com](https://your-backend-service.onrender.com)
-
-> 🔐 Test Credentials  
-Email: `test@example.com`  
-Password: `password123`
-
----
-
-## 📦 Tech Stack
-
-- **Frontend**: React (Hooks), Framer Motion, Toastify
-- **Backend**: Node.js + Express
-- **Database**: PostgreSQL (Neon)
-- **Auth**: JWT + bcryptjs
-- **Validation**: Zod
-- **Deployment**: Vercel (frontend), Render (backend)
-
----
+A responsive, full-stack candidate tracking dashboard that allows you to manage job applicants, filter by status, and update information in real-time.
 
 ## 🚀 Features
 
-- ✅ Register, Login, Logout (JWT auth)
-- ✅ Add, Edit, Delete candidates
-- ✅ Track candidates by status
-- ✅ Filter & search candidates
-- ✅ Form validation with Zod
-- ✅ Mobile responsive UI
-- ✅ Protected routes
-- ✅ Error boundary + toast feedback
+- View candidate summaries by status
+- Search by name, position, or skills
+- Sort by name or newest
+- Edit or delete candidates
+- Filter candidates by recruitment stage
+- Fully responsive design
 
----
+## 🧪 Test Login Credentials
 
-## 🛠 Setup Instructions
+Use the following credentials to log in to the test environment:
 
-```bash
-git clone https://github.com/your-username/assessment-task.git
-cd assessment-task
+```
+Email: Test@123test.com  
+Password: Testing123
 ```
 
-### 🔧 Backend
+> Make sure to log in through the correct login route (check your deployed frontend login page).
 
-```bash
-cd backend
-npm install
-```
+## 📦 Tech Stack
 
-Create a `.env` file:
+- **Frontend**: React, Framer Motion, React Toastify  
+- **Backend**: Node.js, Express  
+- **Database**: PostgreSQL 
+- **API Client**: Axios  
+- **Hosting**: Render.com
 
-```bash
-PORT=5000
-DATABASE_URL=postgresql://user:pass@host:port/dbname
-JWT_SECRET=your_jwt_secret
-```
+## 🛠 Getting Started
 
-```bash
-# Run migrations (manual example)
-psql < schema.sql
+1. **Clone the repo**  
+   ```bash
+   git clone https://github.com/mirulasyrani/assessment-task.git
+   cd yourrepo
+   ```
 
-# Start server
-npm run dev
-```
+2. **Install dependencies**  
+   ```bash
+   npm install
+   ```
 
-### 💻 Frontend
+3. **Create `.env` for backend**  
+   ```env
+   PORT=5000
+   DATABASE_URL=your_db_url
+   ```
 
-```bash
-cd frontend
-npm install
-npm start
-```
+4. **Run backend**  
+   ```bash
+   npm run server
+   ```
 
-Update `services/api.js`:
+5. **Run frontend**  
+   ```bash
+   npm start
+   ```
 
-```js
-axios.defaults.baseURL = 'https://your-backend-service.onrender.com/api';
-```
+> The frontend will run on [Vercel](https://assessment-task-five.vercel.app/) and the backend on [Render](https://assessment-task-1.onrender.com/).
 
----
+## 📄 API Endpoints
 
-## 🧪 API Endpoints
+- `GET /api/candidates` – Get all candidates  
+- `PUT /api/candidates/:id` – Update candidate  
+- `DELETE /api/candidates/:id` – Delete candidate  
+- `POST /api/candidates` – Add new candidate  
+- `POST /api/logs/frontend-error` – Log frontend errors
 
-### Auth Routes
+## 📸 Screenshots
 
-| Method | Endpoint             | Description              |
-|--------|----------------------|--------------------------|
-| POST   | /api/auth/register   | Register new recruiter   |
-| POST   | /api/auth/login      | Login recruiter          |
-| GET    | /api/auth/me         | Get current user profile |
-| POST   | /api/auth/reset-password | Reset password (dev) |
+![Dashboard Screenshot](./screenshots/dashboard.png)
 
-### Candidate Routes (protected)
+## 📬 Contact
 
-| Method | Endpoint                    | Description                 |
-|--------|-----------------------------|-----------------------------|
-| GET    | /api/candidates             | Get all candidates          |
-| GET    | /api/candidates/search?q=   | Search by name/position     |
-| GET    | /api/candidates/filter?status= | Filter by status         |
-| POST   | /api/candidates             | Add candidate               |
-| PUT    | /api/candidates/:id         | Update candidate            |
-| DELETE | /api/candidates/:id         | Delete candidate            |
-
----
-
-## 🧾 Candidate Data Schema
-
-```sql
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  full_name VARCHAR(100),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE candidates (
-  id SERIAL PRIMARY KEY,
-  recruiter_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) NOT NULL,
-  phone VARCHAR(20),
-  position VARCHAR(100) NOT NULL,
-  skills TEXT,
-  experience_years INTEGER,
-  status VARCHAR(20) DEFAULT 'applied' CHECK (
-    status IN ('applied', 'screening', 'interview', 'offer', 'hired', 'rejected')
-  ),
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-## 📋 Status Workflow
-
-- Applied
-- Screening
-- Interview
-- Offer
-- Hired
-- Rejected
-
----
-
-## 📱 UI Screens
-
-- Dashboard with status summary
-- Search & filter bar
-- Candidate cards
-- Candidate form (with validation)
-- Dark mode toggle 🌙
-
----
-
-## ✅ Requirements Covered
-
-- [x] JWT-based auth
-- [x] Form validation with Zod
-- [x] Protected routes & middleware
-- [x] Responsive design
-- [x] CRUD + search/filter features
-- [x] PostgreSQL with proper schema
-- [x] Toasts, error boundaries
-- [x] Deployment ready
-
-
+For questions, feel free to reach out via [LinkedIn](https://www.linkedin.com/in/amirulasyrani/) or open an issue in this repository.
