@@ -145,8 +145,19 @@ const Dashboard = () => {
                   value={c.status}
                   onChange={async (e) => {
                     const newStatus = e.target.value;
+                    const updatedCandidate = {
+                      name: c.name,
+                      email: c.email,
+                      phone: c.phone,
+                      position: c.position,
+                      skills: c.skills,
+                      experience_years: c.experience_years,
+                      notes: c.notes || '',
+                      status: newStatus,
+                    };
+
                     try {
-                      await API.put(`/candidates/${c.id}`, { status: newStatus });
+                      await API.put(`/candidates/${c.id}`, updatedCandidate);
                       toast.success('Status updated!');
                       fetchCandidates();
                     } catch (err) {
