@@ -26,3 +26,5 @@ const candidateSchema = z.object({
   status: z.enum(['applied', 'screening', 'interview', 'offer', 'hired', 'rejected']),
   notes: z.string().optional(),
 });
+
+module.exports = { candidateSchema };
