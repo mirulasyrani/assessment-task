@@ -23,7 +23,7 @@ const Layout = ({ children }) => {
       <nav className="nav">
         <div className="nav-links">
           {isAuthenticated() && (
-            <span className="welcome-msg">👋 Welcome, Mirul</span>
+            <span className="welcome-msg">👋 Welcome, User</span>
           )}
 
           {!isAuthenticated() ? (
