@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
 // ✅ Import shared schema for consistent validation
-import { candidateSchema } from '../shared/schemas/candidateSchema';
+import { candidateSchema } from '../validation/candidateSchema';
 import { toast } from 'react-toastify';
 // import CustomError from '../utils/customError'; // Removed: Defined but never used.
 
