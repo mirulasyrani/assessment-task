@@ -51,11 +51,11 @@ const register = async (req, res, next) => {
     });
 
     res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'None', // ✅ Important for cross-origin
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    }).status(201).json({
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'None', // ✅ Needed for cookies across domains
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });.status(201).json({
       user: {
         id: newRecruiter.rows[0].id,
         username: newRecruiter.rows[0].username,

@@ -18,18 +18,13 @@ const allowedOrigins = [
 
 // ✅ Clean CORS config (handles preflight and credentials)
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.error(`❌ CORS blocked for origin: ${origin}`);
-      callback(new Error(`Not allowed by CORS policy for origin: ${origin}`));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  origin: [
+    'https://assessment-task-five.vercel.app',
+    'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
+  ],
+  credentials: true, // ✅ send cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json());

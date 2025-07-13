@@ -1,144 +1,116 @@
 const { z } = require('zod');
 
-// Strong password: 8–32 chars, uppercase, lowercase, number, special char
+// --- Common Fields ---
+
 const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d^$*+.!@#$%&]{8,32}$/;
 
-// Email field
 const emailField = z
-  .string({ required_error: 'Email is required.', invalid_type_error: 'Email must be a string.' })
-  .email('Invalid email address format.')
-  .max(100, 'Email cannot exceed 100 characters.')
+  .string()
+  .email('Invalid email format.')
+  .max(100, 'Email can be at most 100 characters.')
   .trim()
   .toLowerCase();
 
-// Password field
 const strongPasswordField = z
-  .string({ required_error: 'Password is required.', invalid_type_error: 'Password must be a string.' })
-  .min(8, 'Password must be at least 8 characters long.')
-  .max(32, 'Password must be at most 32 characters long.')
-  .regex(
-    strongPasswordRegex,
-    'Password must include uppercase, lowercase, number, and special character (8–32 characters).'
-  );
+  .string()
+  .min(8, 'Password must be at least 8 characters.')
+  .max(32, 'Password must be at most 32 characters.')
+  .regex(strongPasswordRegex, 'Password must include uppercase, lowercase, number, and special character.');
 
-// Username (letters, numbers, hyphen, underscore)
 const usernameField = z
-  .string({ required_error: 'Username is required.', invalid_type_error: 'Username must be a string.' })
+  .string()
   .min(3, 'Username must be at least 3 characters.')
-  .max(50, 'Username cannot exceed 50 characters.')
-  .trim()
-  .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, hyphens, and underscores.');
+  .max(50, 'Username can be at most 50 characters.')
+  .regex(/^[a-zA-Z0-9_-]+$/, 'Only letters, numbers, hyphens and underscores are allowed.');
 
-// Full name (optional, trimmed, letters only)
 const fullNameField = z
-  .string({ invalid_type_error: 'Full name must be a string.' })
+  .string()
+  .max(100, 'Full name can be at most 100 characters.')
   .trim()
-  .max(100, 'Full name cannot exceed 100 characters.')
   .optional()
   .nullable();
 
-// Register schema
-const registerSchema = z.object({
-  username: usernameField,
-  full_name: fullNameField,
-  email: emailField,
-  password: strongPasswordField,
-  confirmPassword: z.string({
-    required_error: 'Password confirmation is required.',
-    invalid_type_error: 'Password confirmation must be a string.',
-  }),
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'Passwords do not match.',
-  path: ['confirmPassword'],
-});
+const malaysianPhoneField = z
+  .string()
+  .regex(/^(\+?60|0)1[0-46-9]-?[0-9]{7,8}$/, 'Must be a valid Malaysian phone number.')
+  .max(15, 'Phone number must be less than 15 digits.');
 
-// Login schema
+// --- Schemas ---
+
+const registerSchema = z
+  .object({
+    username: usernameField,
+    full_name: fullNameField,
+    email: emailField,
+    password: strongPasswordField,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  });
+
 const loginSchema = z.object({
   email: emailField,
-  password: z.string({ required_error: 'Password is required.', invalid_type_error: 'Password must be a string.' }).min(1),
-  rememberMe: z.boolean().optional().default(false),
+  password: z.string().min(1, 'Password is required.'),
 });
 
-// Password reset request schema
 const resetPasswordRequestSchema = z.object({
   email: emailField,
 });
 
-// Password reset
-const resetPasswordSchema = z.object({
-  token: z.string({ required_error: 'Reset token is required.', invalid_type_error: 'Token must be a string.' }).min(1).trim(),
-  newPassword: strongPasswordField,
-  confirmPassword: z.string({ required_error: 'Password confirmation is required.' }),
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: 'Passwords do not match.',
-  path: ['confirmPassword'],
-});
+const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Token is required.').trim(),
+    newPassword: strongPasswordField,
+    confirmPassword: z.string().min(1),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  });
 
-// Change password
-const changePasswordSchema = z.object({
-  currentPassword: z.string({ required_error: 'Current password is required.' }).min(1),
-  newPassword: strongPasswordField,
-  confirmPassword: z.string({ required_error: 'Password confirmation is required.' }),
-})
-.refine(data => data.newPassword === data.confirmPassword, {
-  message: 'Passwords do not match.',
-  path: ['confirmPassword'],
-})
-.refine(data => data.currentPassword !== data.newPassword, {
-  message: 'New password must be different from current password.',
-  path: ['newPassword'],
-});
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required.'),
+    newPassword: strongPasswordField,
+    confirmPassword: z.string().min(1),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'New password must be different from current password.',
+    path: ['newPassword'],
+  });
 
-// Verify email schema
 const verifyEmailSchema = z.object({
-  token: z.string({ required_error: 'Verification token is required.' }).min(1).trim(),
+  token: z.string().min(1, 'Verification token is required.'),
 });
 
-// JWT token schema
 const jwtTokenSchema = z.object({
-  token: z.string({ required_error: 'Token is required.' }).min(1).trim(),
+  token: z.string().min(1, 'Token is required.'),
 });
 
-// Refresh token schema
 const refreshTokenSchema = z.object({
-  refreshToken: z.string({ required_error: 'Refresh token is required.' }).min(1).trim(),
+  refreshToken: z.string().min(1, 'Refresh token is required.'),
 });
 
-// Resend verification
 const resendVerificationSchema = z.object({
   email: emailField,
 });
 
-// Auth success response schema
-const authSuccessResponseSchema = z.object({
-  success: z.literal(true),
-  message: z.string(),
-  data: z.object({
-    user: z.object({
-      id: z.string(),
-      username: z.string(),
-      email: z.string(),
-      full_name: z.string().nullable(),
-      email_verified: z.boolean(),
-      created_at: z.string(),
-      updated_at: z.string(),
-    }),
-    token: z.string(),
-    refreshToken: z.string(),
-  }),
-});
+// Example extra field: years of experience
+const experienceField = z.coerce
+  .number({
+    required_error: 'Years of experience is required.',
+    invalid_type_error: 'Years of experience must be a number.',
+  })
+  .min(0, 'Years must be 0 or greater.')
+  .max(50, 'Years must be 50 or less.');
 
-// Auth error response schema
-const authErrorResponseSchema = z.object({
-  success: z.literal(false),
-  message: z.string(),
-  errors: z.array(
-    z.object({
-      field: z.string(),
-      message: z.string(),
-    })
-  ).optional(),
-});
+// --- Export ---
 
 module.exports = {
   registerSchema,
@@ -150,6 +122,12 @@ module.exports = {
   jwtTokenSchema,
   refreshTokenSchema,
   resendVerificationSchema,
-  authSuccessResponseSchema,
-  authErrorResponseSchema,
+
+  // common fields (for reuse in candidates schema)
+  emailField,
+  usernameField,
+  fullNameField,
+  strongPasswordField,
+  malaysianPhoneField,
+  experienceField,
 };

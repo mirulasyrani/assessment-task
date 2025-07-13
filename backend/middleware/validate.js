@@ -16,13 +16,18 @@ const validate = (schema, target = 'body') => async (req, res, next) => {
     next();
   } catch (err) {
     if (err instanceof ZodError) {
-      err.validationTarget = target;
-
-      // Optional: Add development-only logging
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(`Zod validation error on ${target}:`, err.issues);
-      }
+      // Return validation errors as a proper JSON response
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed.',
+        errors: err.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
+      });
     }
+
+    // Any other error, pass to global error handler
     next(err);
   }
 };
