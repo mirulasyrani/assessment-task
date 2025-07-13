@@ -13,7 +13,7 @@ const { authLimiter } = require('../middleware/rateLimiter');
 const {
     registerSchema,
     loginSchema
-} = require('../../shared/schemas/authSchema');
+} = require('../../frontend/src/shared/schemas/authSchema');
 
 // Recruiter registration
 router.post('/register', authLimiter, validate(registerSchema), register);

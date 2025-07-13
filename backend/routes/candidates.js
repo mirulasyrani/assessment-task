@@ -3,7 +3,7 @@ const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
-const { candidateSchema, updateCandidateSchema } = require('../../shared/schemas/candidateSchema');
+const { candidateSchema, updateCandidateSchema } = require('../../frontend/src/shared/schemas/candidateSchema');
 
 const {
     getCandidates,
