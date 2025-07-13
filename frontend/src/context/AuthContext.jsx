@@ -9,7 +9,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
 
-  // Fetch the logged-in user
   const fetchUser = async () => {
     try {
       const response = await API.get('/auth/me');
@@ -64,7 +63,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     setAuthContextLogout(logout);
-    fetchUser(); // ✅ Always try fetching with cookie
+    fetchUser();
   }, []);
 
   return (

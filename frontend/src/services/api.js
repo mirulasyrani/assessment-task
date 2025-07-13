@@ -10,10 +10,10 @@ export const setAuthContextLogout = (logoutFn) => {
 
 const API = axios.create({
   baseURL: 'https://assessment-task-1.onrender.com/api',
+  withCredentials: true, // ✅ Include cookies in cross-origin requests
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // ✅ include cookies in cross-origin requests
 });
 
 // Global response error handler
@@ -30,7 +30,8 @@ API.interceptors.response.use(
           window.location.href = '/login';
         }, 1200);
       }
-    } else {
+    } else if (status !== 404) {
+      // Prevent toast spam on missing routes like /auth/me during first load
       const message = error.response?.data?.message || 'Something went wrong';
       toast.error(message);
     }
