@@ -1,3 +1,4 @@
+// routes/auth.js
 const express = require('express');
 const router = express.Router();
 
@@ -11,22 +12,21 @@ const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
 
-// ✅ Updated import path for backend-side schemas
 const {
   registerSchema,
   loginSchema
 } = require('../schemas/authSchema');
 
-// Recruiter registration
+// Register recruiter
 router.post('/register', authLimiter, validate(registerSchema), register);
 
-// Recruiter login
+// Login recruiter
 router.post('/login', authLimiter, validate(loginSchema), login);
 
-// Get current user profile (protected)
+// Get current authenticated recruiter info
 router.get('/me', authMiddleware, getMe);
 
-// Log out recruiter
+// Logout (consider making it GET or POST based on frontend use)
 router.post('/logout', logout);
 
 module.exports = router;
