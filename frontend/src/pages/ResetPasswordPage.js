@@ -1,142 +1,212 @@
-// src/pages/ResetPasswordPage.js
-import React, { useState } from 'react';
-import API from '../services/api';
-import Layout from '../components/Layout';
-import { toast } from 'react-toastify';
-import { z } from 'zod';
-import styles from './AuthForm.module.css'; 
+const { z } = require('zod');
 
-// Define simple validation schema with Zod
-const resetPasswordSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
-  newPassword: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+// Regex for Malaysian mobile numbers
+const malaysianPhoneRegex = /^(\+?60|0)?1[0-46-9]-?[0-9]{7,8}$/;
+
+// Common fields
+const nameField = z
+  .string({ required_error: 'Name is required.', invalid_type_error: 'Name must be a string.' })
+  .min(1, 'Name cannot be empty.')
+  .max(100, 'Name cannot exceed 100 characters.')
+  .trim()
+  .regex(/^[a-zA-Z\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes.');
+
+const emailField = z
+  .string({ required_error: 'Email is required.', invalid_type_error: 'Email must be a string.' })
+  .email('Invalid email address format.')
+  .max(100, 'Email cannot exceed 100 characters.')
+  .trim()
+  .toLowerCase();
+
+const phoneField = z
+  .string({ invalid_type_error: 'Phone number must be a string.' })
+  .max(20, 'Phone number cannot exceed 20 characters.')
+  .trim()
+  .regex(malaysianPhoneRegex, 'Invalid Malaysian phone number format (e.g., +60123456789 or 012-3456789).')
+  .optional()
+  .nullable()
+  .transform((val) => (val === '' ? null : val));
+
+const positionField = z
+  .string({ required_error: 'Position is required.', invalid_type_error: 'Position must be a string.' })
+  .min(1, 'Position cannot be empty.')
+  .max(100, 'Position cannot exceed 100 characters.')
+  .trim();
+
+const skillsField = z
+  .string({ invalid_type_error: 'Skills must be a string.' })
+  .max(1000, 'Skills text cannot exceed 1000 characters.')
+  .trim()
+  .optional()
+  .nullable()
+  .transform((val) => (val === '' ? null : val));
+
+const experienceYearsField = z
+  .coerce.number({ invalid_type_error: 'Experience years must be a number.' })
+  .int('Experience years must be an integer.')
+  .min(0, 'Experience years cannot be negative.')
+  .max(50, 'Experience years value is unrealistically high (max 50).')
+  .optional()
+  .nullable();
+
+const notesField = z
+  .string({ invalid_type_error: 'Notes must be a string.' })
+  .max(1000, 'Notes cannot exceed 1000 characters.')
+  .trim()
+  .optional()
+  .nullable()
+  .transform((val) => (val === '' ? null : val));
+
+// Enums
+const CandidateStatus = z.enum(['applied', 'screening', 'interview', 'offer', 'hired', 'rejected', 'withdrawn']);
+const CandidatePriority = z.enum(['low', 'medium', 'high', 'urgent']);
+
+// Create schema
+const createCandidateSchema = z.object({
+  name: nameField,
+  email: emailField,
+  phone: phoneField,
+  position: positionField,
+  skills: skillsField,
+  experience_years: experienceYearsField,
+  status: CandidateStatus.default('applied'),
+  priority: CandidatePriority.default('medium'),
+  notes: notesField,
+  resume_url: z.string().url('Invalid URL format for resume.').optional().nullable(),
+  linkedin_url: z
+    .string()
+    .url('Invalid URL format for LinkedIn profile.')
+    .regex(/^https?:\/\/(www\.)?linkedin\.com\/.*$/, 'Must be a valid LinkedIn URL.')
+    .optional()
+    .nullable(),
+  portfolio_url: z.string().url('Invalid URL format for portfolio.').optional().nullable(),
+  expected_salary: z
+    .coerce.number({ invalid_type_error: 'Expected salary must be a number.' })
+    .min(0, 'Expected salary cannot be negative.')
+    .max(999999, 'Expected salary value is too high.')
+    .optional()
+    .nullable(),
+  availability_date: z.string().datetime('Invalid date format for availability.').optional().nullable(),
+  source: z.enum(['website', 'linkedin', 'referral', 'job_board', 'agency', 'other']).default('website'),
 });
-// The pointless .refine() block has been removed as there's no confirmPassword field
 
-const ResetPasswordPage = () => {
-  const [form, setForm] = useState({ email: '', newPassword: '' });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+// Update schema
+const updateCandidateSchema = z.object({
+  id: z
+    .string({ required_error: 'Candidate ID is required for updates.', invalid_type_error: 'Candidate ID must be a string.' })
+    .min(1, 'Candidate ID cannot be empty.'),
+  name: nameField.optional(),
+  email: emailField.optional(),
+  phone: phoneField,
+  position: positionField.optional(),
+  skills: skillsField,
+  experience_years: experienceYearsField,
+  status: CandidateStatus.optional(),
+  priority: CandidatePriority.optional(),
+  notes: notesField,
+  resume_url: z.string().url('Invalid URL format for resume.').optional().nullable(),
+  linkedin_url: z
+    .string()
+    .url('Invalid URL format for LinkedIn profile.')
+    .regex(/^https?:\/\/(www\.)?linkedin\.com\/.*$/, 'Must be a valid LinkedIn URL.')
+    .optional()
+    .nullable(),
+  portfolio_url: z.string().url('Invalid URL format for portfolio.').optional().nullable(),
+  expected_salary: z
+    .coerce.number({ invalid_type_error: 'Expected salary must be a number.' })
+    .min(0, 'Expected salary cannot be negative.')
+    .max(999999, 'Expected salary value is too high.')
+    .optional()
+    .nullable(),
+  availability_date: z.string().datetime('Invalid date format for availability.').optional().nullable(),
+  source: z.enum(['website', 'linkedin', 'referral', 'job_board', 'agency', 'other']).optional(),
+});
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) { 
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
+// Search/filter schema
+const candidateSearchSchema = z.object({
+  name: z.string().optional(),
+  email: z.string().optional(),
+  position: z.string().optional(),
+  status: CandidateStatus.optional(),
+  priority: CandidatePriority.optional(),
+  min_experience: z.coerce.number().min(0).optional(),
+  max_experience: z.coerce.number().min(0).optional(),
+  source: z.enum(['website', 'linkedin', 'referral', 'job_board', 'agency', 'other']).optional(),
+  skills: z.string().optional(),
+  created_after: z.string().datetime().optional(),
+  created_before: z.string().datetime().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  sort_by: z.enum(['name', 'email', 'position', 'status', 'created_at', 'updated_at']).default('created_at'),
+  sort_order: z.enum(['asc', 'desc']).default('desc'),
+});
 
-  const handleBlur = (field) => {
-    try {
-      resetPasswordSchema.pick({ [field]: true }).parse({ [field]: form[field] });
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    } catch (err) {
-      const message = err?.errors?.[0]?.message || 'Invalid input';
-      setErrors((prev) => ({ ...prev, [field]: message }));
-    }
-  };
+// Bulk operation schema
+const bulkCandidateOperationSchema = z.object({
+  candidate_ids: z.array(z.string().min(1, 'Candidate ID cannot be empty.')).min(1).max(100),
+  operation: z.enum(['update_status', 'update_priority', 'delete']),
+  data: z.object({
+    status: CandidateStatus.optional(),
+    priority: CandidatePriority.optional(),
+  }).optional(),
+});
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrors({}); 
+// Response schemas
+const candidateResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  phone: z.string().nullable(),
+  position: z.string(),
+  skills: z.string().nullable(),
+  experience_years: z.number().nullable(),
+  status: CandidateStatus,
+  priority: CandidatePriority,
+  notes: z.string().nullable(),
+  resume_url: z.string().nullable(),
+  linkedin_url: z.string().nullable(),
+  portfolio_url: z.string().nullable(),
+  expected_salary: z.number().nullable(),
+  availability_date: z.string().nullable(),
+  source: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  recruiter_id: z.string(),
+});
 
-    try {
-      const parsedForm = resetPasswordSchema.parse(form);
-      
-      await API.post('/auth/reset-password', parsedForm); 
-      
-      toast.success('Password updated successfully! You can now log in with your new password.');
-      setForm({ email: '', newPassword: '' }); 
-    } catch (err) {
-      if (err.name === 'ZodError') {
-        const fieldErrors = {};
-        const messages = ['Please correct the following errors:']; 
-        err.errors.forEach((e) => {
-          fieldErrors[e.path[0]] = e.message;
-          messages.push(`• ${e.message}`); 
-        });
-        setErrors(fieldErrors);
-        toast.error(messages.join('\n'), { 
-          autoClose: false,
-          style: { whiteSpace: 'pre-line' },
-        });
-      } else if (err.response) {
-        toast.error(err.response?.data?.message || 'Password reset failed. Please try again.');
-      } else {
-        console.error("Reset Password Error:", err); 
-        toast.error('An unexpected error occurred. Please check your network connection.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+const candidateListResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    candidates: z.array(candidateResponseSchema),
+    pagination: z.object({
+      page: z.number(),
+      limit: z.number(),
+      total: z.number(),
+      pages: z.number(),
+    }),
+  }),
+});
 
-  return (
-    <Layout>
-      <div className={styles.authContainer}> 
-        <h2>Reset Password</h2>
-        <form onSubmit={handleSubmit} noValidate className={styles.form}> 
-          {/* Email Input */}
-          <label htmlFor="email" className={styles.label}>
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            placeholder="your.email@example.com"
-            value={form.email}
-            onChange={handleChange}
-            onBlur={() => handleBlur('email')}
-            autoComplete="email"
-            aria-describedby={errors.email ? "email-error" : undefined}
-            aria-invalid={!!errors.email}
-            required
-            className={styles.input} 
-          />
-          {errors.email && (
-            <small id="email-error" role="alert" className={styles.error}> 
-              {errors.email}
-            </small>
-          )}
+const candidateErrorResponseSchema = z.object({
+  success: z.literal(false),
+  message: z.string(),
+  errors: z.array(z.object({
+    field: z.string(),
+    message: z.string(),
+  })).optional(),
+});
 
-          {/* New Password Input */}
-          <label htmlFor="newPassword" className={styles.label}>
-            New Password
-          </label>
-          <input
-            id="newPassword"
-            type="password"
-            name="newPassword"
-            placeholder="At least 6 characters"
-            value={form.newPassword}
-            onChange={handleChange}
-            onBlur={() => handleBlur('newPassword')}
-            autoComplete="new-password"
-            aria-describedby={errors.newPassword ? "newPassword-error" : undefined}
-            aria-invalid={!!errors.newPassword}
-            required
-            className={styles.input} 
-          />
-          {errors.newPassword && (
-            <small id="newPassword-error" role="alert" className={styles.error}> 
-              {errors.newPassword}
-            </small>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={styles.button} 
-            aria-busy={loading}
-          >
-            {loading ? 'Resetting...' : 'Reset Password'}
-          </button>
-        </form>
-      </div>
-    </Layout>
-  );
+// Export in CommonJS format
+module.exports = {
+  createCandidateSchema,
+  updateCandidateSchema,
+  candidateSearchSchema,
+  bulkCandidateOperationSchema,
+  candidateResponseSchema,
+  candidateListResponseSchema,
+  candidateErrorResponseSchema,
+  candidateSchema: createCandidateSchema,
+  CandidateStatus,
+  CandidatePriority,
+  malaysianPhoneRegex,
 };
-
-export default ResetPasswordPage;

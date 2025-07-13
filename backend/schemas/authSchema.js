@@ -2,18 +2,10 @@ const { z } = require('zod');
 
 /**
  * Regex for strong passwords:
- * - At least 8 characters long
- * - At most 32 characters long
- * - Contains at least one uppercase letter (A-Z)
- * - Contains at least one lowercase letter (a-z)
- * - Contains at least one digit (0-9)
- * - Contains at least one special character from the allowed set
  */
 const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d^$*+.!@#$%&]{8,32}$/;
 
-/**
- * Email validation with consistent rules
- */
+// Email field schema
 const emailField = z
   .string({
     required_error: 'Email is required.',
@@ -24,9 +16,7 @@ const emailField = z
   .trim()
   .toLowerCase();
 
-/**
- * Strong password validation
- */
+// Password field schema
 const strongPasswordField = z
   .string({
     required_error: 'Password is required.',
@@ -39,10 +29,8 @@ const strongPasswordField = z
     'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (8-32 characters).'
   );
 
-/**
- * Zod schema for Recruiter Registration
- */
-export const registerSchema = z.object({
+// Register schema
+const registerSchema = z.object({
   username: z
     .string({
       required_error: 'Username is required.',
@@ -58,7 +46,7 @@ export const registerSchema = z.object({
     .trim()
     .min(1, 'Full name cannot be empty.')
     .optional()
-    .or(z.literal('')), // Allow empty string or undefined
+    .or(z.literal('')),
   email: emailField,
   password: strongPasswordField,
   confirmPassword: z.string({
@@ -70,10 +58,8 @@ export const registerSchema = z.object({
   path: ['confirmPassword'],
 });
 
-/**
- * Zod schema for Recruiter Login
- */
-export const loginSchema = z.object({
+// Login schema
+const loginSchema = z.object({
   email: emailField,
   password: z
     .string({
@@ -84,17 +70,13 @@ export const loginSchema = z.object({
   rememberMe: z.boolean().optional().default(false),
 });
 
-/**
- * Zod schema for Password Reset Request
- */
-export const resetPasswordRequestSchema = z.object({
+// Password reset request schema
+const resetPasswordRequestSchema = z.object({
   email: emailField,
 });
 
-/**
- * Zod schema for Password Reset Confirmation
- */
-export const resetPasswordSchema = z.object({
+// Password reset schema
+const resetPasswordSchema = z.object({
   token: z
     .string({
       required_error: 'Reset token is required.',
@@ -111,10 +93,8 @@ export const resetPasswordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-/**
- * Zod schema for Change Password (authenticated user)
- */
-export const changePasswordSchema = z.object({
+// Change password schema
+const changePasswordSchema = z.object({
   currentPassword: z
     .string({
       required_error: 'Current password is required.',
@@ -134,10 +114,8 @@ export const changePasswordSchema = z.object({
   path: ['newPassword'],
 });
 
-/**
- * Zod schema for Email Verification
- */
-export const verifyEmailSchema = z.object({
+// Email verification schema
+const verifyEmailSchema = z.object({
   token: z
     .string({
       required_error: 'Verification token is required.',
@@ -146,10 +124,8 @@ export const verifyEmailSchema = z.object({
     .min(1, 'Verification token is required.'),
 });
 
-/**
- * Zod schema for JWT Token Validation
- */
-export const jwtTokenSchema = z.object({
+// JWT token schema
+const jwtTokenSchema = z.object({
   token: z
     .string({
       required_error: 'Token is required.',
@@ -158,10 +134,8 @@ export const jwtTokenSchema = z.object({
     .min(1, 'Token is required.'),
 });
 
-/**
- * Zod schema for Refresh Token
- */
-export const refreshTokenSchema = z.object({
+// Refresh token schema
+const refreshTokenSchema = z.object({
   refreshToken: z
     .string({
       required_error: 'Refresh token is required.',
@@ -170,17 +144,13 @@ export const refreshTokenSchema = z.object({
     .min(1, 'Refresh token is required.'),
 });
 
-/**
- * Zod schema for Resend Email Verification
- */
-export const resendVerificationSchema = z.object({
+// Resend verification schema
+const resendVerificationSchema = z.object({
   email: emailField,
 });
 
-/**
- * Common API Response Schemas
- */
-export const authSuccessResponseSchema = z.object({
+// Auth success response schema
+const authSuccessResponseSchema = z.object({
   success: z.literal(true),
   message: z.string(),
   data: z.object({
@@ -198,7 +168,8 @@ export const authSuccessResponseSchema = z.object({
   }),
 });
 
-export const authErrorResponseSchema = z.object({
+// Auth error response schema
+const authErrorResponseSchema = z.object({
   success: z.literal(false),
   message: z.string(),
   errors: z.array(z.object({
@@ -206,3 +177,17 @@ export const authErrorResponseSchema = z.object({
     message: z.string(),
   })).optional(),
 });
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  resetPasswordRequestSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  verifyEmailSchema,
+  jwtTokenSchema,
+  refreshTokenSchema,
+  resendVerificationSchema,
+  authSuccessResponseSchema,
+  authErrorResponseSchema,
+};

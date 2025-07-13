@@ -5,8 +5,10 @@ const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
 const {
   createCandidateSchema,
-  updateCandidateSchema
+  updateCandidateSchema,
+  candidateSearchSchema,
 } = require('../schemas/candidateSchema');
+const { z } = require('zod');
 
 const {
   getCandidates,
@@ -17,25 +19,22 @@ const {
   deleteCandidate,
 } = require('../controllers/candidateController');
 
-// All routes in this router require authentication
+const idParamSchema = z.object({
+  id: z.string().min(1, 'Candidate ID is required'),
+});
+
 router.use(authMiddleware);
 
-// Get all candidates
 router.get('/', getCandidates);
 
-// Search candidates
-router.get('/search', searchCandidates);
+router.get('/search', validate(candidateSearchSchema), searchCandidates);
 
-// Filter candidates by status
-router.get('/filter', filterCandidates);
+router.get('/filter', validate(candidateSearchSchema), filterCandidates);
 
-// Create new candidate
 router.post('/', validate(createCandidateSchema), createCandidate);
 
-// Update candidate by ID
 router.put('/:id', validate(updateCandidateSchema), updateCandidate);
 
-// Delete candidate by ID
-router.delete('/:id', deleteCandidate);
+router.delete('/:id', validate(idParamSchema), deleteCandidate);
 
 module.exports = router;

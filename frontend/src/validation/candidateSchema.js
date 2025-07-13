@@ -24,13 +24,25 @@ const phoneField = z
 
 const positionField = z.string().min(1, 'Position is required').max(100).trim();
 
-const skillsField = z.string().max(1000).trim().optional().nullable().transform((val) => (val === '' ? null : val));
+const skillsField = z
+  .string()
+  .max(1000)
+  .trim()
+  .optional()
+  .nullable()
+  .transform((val) => (val === '' ? null : val));
 
 const experienceYearsField = z.coerce.number().min(0).max(50).optional().nullable();
 
-const notesField = z.string().max(1000).trim().optional().nullable().transform((val) => (val === '' ? null : val));
+const notesField = z
+  .string()
+  .max(1000)
+  .trim()
+  .optional()
+  .nullable()
+  .transform((val) => (val === '' ? null : val));
 
-export const candidateSchema = z.object({
+const candidateSchema = z.object({
   name: nameField,
   email: emailField,
   phone: phoneField,
@@ -39,3 +51,7 @@ export const candidateSchema = z.object({
   experience_years: experienceYearsField,
   notes: notesField,
 });
+
+module.exports = {
+  candidateSchema,
+};

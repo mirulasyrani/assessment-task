@@ -21,7 +21,7 @@ const strongPasswordField = z
   );
 
 // Auth Schemas
-export const registerSchema = z.object({
+const registerSchema = z.object({
   username: z
     .string()
     .min(3, 'Username must be at least 3 characters')
@@ -41,17 +41,17 @@ export const registerSchema = z.object({
   path: ['confirmPassword'],
 });
 
-export const loginSchema = z.object({
+const loginSchema = z.object({
   email: emailField,
   password: z.string().min(1, 'Password is required'),
   rememberMe: z.boolean().optional(),
 });
 
-export const resetPasswordRequestSchema = z.object({
+const resetPasswordRequestSchema = z.object({
   email: emailField,
 });
 
-export const resetPasswordSchema = z.object({
+const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
   newPassword: strongPasswordField,
   confirmPassword: z.string(),
@@ -60,32 +60,44 @@ export const resetPasswordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-export const changePasswordSchema = z.object({
+const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: strongPasswordField,
   confirmPassword: z.string(),
 })
-.refine((data) => data.newPassword === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-})
-.refine((data) => data.currentPassword !== data.newPassword, {
-  message: 'New password must be different from current password',
-  path: ['newPassword'],
-});
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'New password must be different from current password',
+    path: ['newPassword'],
+  });
 
-export const verifyEmailSchema = z.object({
+const verifyEmailSchema = z.object({
   token: z.string().min(1, 'Verification token is required'),
 });
 
-export const resendVerificationSchema = z.object({
+const resendVerificationSchema = z.object({
   email: emailField,
 });
 
-export const jwtTokenSchema = z.object({
+const jwtTokenSchema = z.object({
   token: z.string().min(1, 'Token is required'),
 });
 
-export const refreshTokenSchema = z.object({
+const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  resetPasswordRequestSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
+  jwtTokenSchema,
+  refreshTokenSchema,
+};
