@@ -17,22 +17,10 @@ const API = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Needed if you're using cookies/sessions
+  withCredentials: true, // ✅ Required to send cookies
 });
 
-// Request interceptor to attach Authorization header (if token-based auth is used)
-API.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor to handle 401 and other errors
+// ✅ Response interceptor to handle errors like 401
 API.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -44,7 +32,7 @@ API.interceptors.response.use(
         authContextLogoutFunction(); // Logout from context
         setTimeout(() => {
           window.location.href = '/login';
-        }, 1500); // Give toast time to show
+        }, 1500);
       } else {
         toast.error(data.message || 'An error occurred');
       }
