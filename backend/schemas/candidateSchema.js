@@ -299,8 +299,8 @@ const candidateErrorResponseSchema = z.object({
   })).optional(),
 });
 
-// Export schemas
-export {
+// Export schemas using CommonJS
+module.exports = {
   createCandidateSchema,
   updateCandidateSchema,
   candidateSearchSchema,
@@ -311,7 +311,6 @@ export {
   CandidateStatus,
   CandidatePriority,
   malaysianPhoneRegex,
+  // for backward compatibility, also export original schema name
+  candidateSchema: createCandidateSchema,
 };
-
-// For backward compatibility, also export the original schema name
-export const candidateSchema = createCandidateSchema;
