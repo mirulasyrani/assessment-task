@@ -1,4 +1,4 @@
-const { z } = require('zod');
+import { z } from 'zod';
 
 const malaysianPhoneRegex = /^(\+?60|0)?1[0-46-9]-?[0-9]{7,8}$/;
 
@@ -42,7 +42,7 @@ const notesField = z
   .nullable()
   .transform((val) => (val === '' ? null : val));
 
-const candidateSchema = z.object({
+export const candidateSchema = z.object({
   name: nameField,
   email: emailField,
   phone: phoneField,
@@ -51,7 +51,3 @@ const candidateSchema = z.object({
   experience_years: experienceYearsField,
   notes: notesField,
 });
-
-module.exports = {
-  candidateSchema,
-};

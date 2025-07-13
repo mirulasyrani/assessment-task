@@ -1,9 +1,7 @@
-const { z } = require('zod');
+import { z } from 'zod';
 
-// Reuse the password regex
 const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d^$*+.!@#$%&]{8,32}$/;
 
-// Common field
 const emailField = z
   .string()
   .email('Invalid email address')
@@ -20,8 +18,7 @@ const strongPasswordField = z
     'Password must include uppercase, lowercase, number, and special character'
   );
 
-// Auth Schemas
-const registerSchema = z.object({
+export const registerSchema = z.object({
   username: z
     .string()
     .min(3, 'Username must be at least 3 characters')
@@ -41,17 +38,17 @@ const registerSchema = z.object({
   path: ['confirmPassword'],
 });
 
-const loginSchema = z.object({
+export const loginSchema = z.object({
   email: emailField,
   password: z.string().min(1, 'Password is required'),
   rememberMe: z.boolean().optional(),
 });
 
-const resetPasswordRequestSchema = z.object({
+export const resetPasswordRequestSchema = z.object({
   email: emailField,
 });
 
-const resetPasswordSchema = z.object({
+export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
   newPassword: strongPasswordField,
   confirmPassword: z.string(),
@@ -60,7 +57,7 @@ const resetPasswordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-const changePasswordSchema = z.object({
+export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: strongPasswordField,
   confirmPassword: z.string(),
@@ -74,30 +71,18 @@ const changePasswordSchema = z.object({
     path: ['newPassword'],
   });
 
-const verifyEmailSchema = z.object({
+export const verifyEmailSchema = z.object({
   token: z.string().min(1, 'Verification token is required'),
 });
 
-const resendVerificationSchema = z.object({
+export const resendVerificationSchema = z.object({
   email: emailField,
 });
 
-const jwtTokenSchema = z.object({
+export const jwtTokenSchema = z.object({
   token: z.string().min(1, 'Token is required'),
 });
 
-const refreshTokenSchema = z.object({
+export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
-
-module.exports = {
-  registerSchema,
-  loginSchema,
-  resetPasswordRequestSchema,
-  resetPasswordSchema,
-  changePasswordSchema,
-  verifyEmailSchema,
-  resendVerificationSchema,
-  jwtTokenSchema,
-  refreshTokenSchema,
-};
