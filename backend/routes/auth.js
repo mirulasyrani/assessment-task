@@ -2,18 +2,20 @@ const express = require('express');
 const router = express.Router();
 
 const {
-    register,
-    login,
-    getMe,
-    logout
+  register,
+  login,
+  getMe,
+  logout
 } = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
+
+// ✅ Updated import path for backend-side schemas
 const {
-    registerSchema,
-    loginSchema
-} = require('../../frontend/src/shared/schemas/authSchema');
+  registerSchema,
+  loginSchema
+} = require('../schemas/authSchema');
 
 // Recruiter registration
 router.post('/register', authLimiter, validate(registerSchema), register);

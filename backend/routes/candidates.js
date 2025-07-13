@@ -3,15 +3,18 @@ const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
-const { candidateSchema, updateCandidateSchema } = require('../../frontend/src/shared/schemas/candidateSchema');
+const {
+  createCandidateSchema,
+  updateCandidateSchema
+} = require('../schemas/candidateSchema');
 
 const {
-    getCandidates,
-    searchCandidates,
-    filterCandidates,
-    createCandidate,
-    updateCandidate,
-    deleteCandidate,
+  getCandidates,
+  searchCandidates,
+  filterCandidates,
+  createCandidate,
+  updateCandidate,
+  deleteCandidate,
 } = require('../controllers/candidateController');
 
 // All routes in this router require authentication
@@ -27,7 +30,7 @@ router.get('/search', searchCandidates);
 router.get('/filter', filterCandidates);
 
 // Create new candidate
-router.post('/', validate(candidateSchema), createCandidate);
+router.post('/', validate(createCandidateSchema), createCandidate);
 
 // Update candidate by ID
 router.put('/:id', validate(updateCandidateSchema), updateCandidate);
