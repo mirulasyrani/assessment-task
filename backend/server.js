@@ -7,7 +7,7 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 console.log('🟢 Starting server setup...');
-app.set('trust proxy', 1);
+app.set('trust proxy', 1); // Trust Render or Vercel proxy
 
 // ✅ Centralize allowed origins
 const allowedOrigins = [
@@ -16,21 +16,28 @@ const allowedOrigins = [
   'http://localhost:3000',
 ];
 
-// ✅ Clean and strict CORS setup
+// ✅ Strict CORS configuration
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      // allow requests with no origin (like curl, mobile apps)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
-// ✅ Parse JSON and cookies
+// ✅ Middleware
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Optional frontend error logger (good for debugging Vercel)
+// ✅ Optional frontend error logger
 app.post('/api/logs/frontend-error', (req, res) => {
   const errorData = req.body;
   console.error('\n--- FRONTEND ERROR REPORT ---');
