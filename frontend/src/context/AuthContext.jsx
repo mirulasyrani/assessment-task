@@ -7,10 +7,13 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch the currently authenticated user
   const fetchUser = async () => {
     try {
-      const response = await API.get('/auth/me');
-      setUser(response.data.user); // ✅ .user instead of full response
+      const response = await API.get('/auth/me', {
+        withCredentials: true, // ✅ Send cookie for auth
+      });
+      setUser(response.data.user);
     } catch (error) {
       setUser(null);
     } finally {
@@ -18,10 +21,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Logout user and clear cookie + state
   const logout = async () => {
     setLoading(true);
     try {
-      await API.post('/auth/logout');
+      await API.post('/auth/logout', {}, {
+        withCredentials: true, // ✅ Include cookie for logout
+      });
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
@@ -30,29 +36,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    fetchUser(); // Always try fetch — cookie handles auth
-    setAuthContextLogout(logout);
-  }, []);
-
+  // Login function (sets user state and stores token)
   const login = async (credentials) => {
     setLoading(true);
     try {
-      const response = await API.post('/auth/login', credentials);
-      setUser(response.data.user); // ✅ .user only
-      return response.data.user;
-    } catch (error) {
-      setUser(null);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const register = async (userData) => {
-    setLoading(true);
-    try {
-      const response = await API.post('/auth/register', userData);
+      const response = await API.post('/auth/login', credentials, {
+        withCredentials: true, // ✅ Send cookie
+      });
       setUser(response.data.user);
       return response.data.user;
     } catch (error) {
@@ -62,6 +52,29 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
+  // Register function
+  const register = async (userData) => {
+    setLoading(true);
+    try {
+      const response = await API.post('/auth/register', userData, {
+        withCredentials: true, // ✅ Send cookie
+      });
+      setUser(response.data.user);
+      return response.data.user;
+    } catch (error) {
+      setUser(null);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Run on mount
+  useEffect(() => {
+    fetchUser(); // ✅ Try to authenticate via cookie
+    setAuthContextLogout(logout); // Provide logout to interceptor
+  }, []);
 
   const isAuthenticated = () => !!user;
 

@@ -1,4 +1,3 @@
-// backend/server.js
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -17,7 +16,7 @@ const allowedOrigins = [
   'http://localhost:3000',
 ];
 
-// Main CORS middleware
+// ✅ Clean CORS config (handles preflight and credentials)
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -33,25 +32,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
 }));
 
-// Fix pre-flight (OPTIONS) request handling using same origin check
-app.options('*', cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.error(`❌ CORS pre-flight blocked for origin: ${origin}`);
-      callback(new Error(`Not allowed by CORS policy for origin: ${origin}`));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-}));
-
 app.use(express.json());
 app.use(cookieParser());
 
+// Optional: for logging frontend errors
 app.post('/api/logs/frontend-error', (req, res) => {
   const errorData = req.body;
   console.error('\n--- FRONTEND ERROR REPORT ---');
@@ -74,17 +58,18 @@ app.post('/api/logs/frontend-error', (req, res) => {
   res.status(200).json({ message: 'Frontend error log received by backend.' });
 });
 
+// Routes
 const logRoutes = (basePath, router) => {
   try {
     router.stack.forEach((layer) => {
       if (layer.route) {
-        const methods = Object.keys(layer.route.methods).map(method => method.toUpperCase()).join(', ');
+        const methods = Object.keys(layer.route.methods).map(m => m.toUpperCase()).join(', ');
         console.log(`🔍 Route: ${methods.padEnd(8)} ${basePath}${layer.route.path}`);
       } else if (layer.name === 'router' && layer.handle.stack) {
-        layer.handle.stack.forEach((nestedLayer) => {
-          if (nestedLayer.route) {
-            const methods = Object.keys(nestedLayer.route.methods).map(method => method.toUpperCase()).join(', ');
-            const nestedPath = nestedLayer.route.path === '/' ? '' : nestedLayer.route.path;
+        layer.handle.stack.forEach((nested) => {
+          if (nested.route) {
+            const methods = Object.keys(nested.route.methods).map(m => m.toUpperCase()).join(', ');
+            const nestedPath = nested.route.path === '/' ? '' : nested.route.path;
             console.log(`🔍 Route: ${methods.padEnd(8)} ${basePath}${nestedPath}`);
           }
         });
@@ -113,14 +98,16 @@ try {
   console.error('❌ Failed to mount /api/candidates routes:', err.stack || err);
 }
 
+// 404 handler
 app.use((req, res, next) => {
   res.status(404).json({ message: `API endpoint not found: ${req.method} ${req.originalUrl}` });
 });
 
+// Global error handler
 app.use(errorHandler);
 
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
-  console.log(`Access backend at: http://localhost:${PORT}`);
 });

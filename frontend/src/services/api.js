@@ -1,20 +1,38 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-let authContextLogoutFunction = () => {};
+// A placeholder logout function set by AuthContext
+let authContextLogoutFunction = () => {
+  // No-op by default
+};
 
+// Inject logout from AuthContext
 export const setAuthContextLogout = (logoutFn) => {
   authContextLogoutFunction = logoutFn;
 };
 
+// Create API instance
 const API = axios.create({
   baseURL: 'https://assessment-task-1.onrender.com/api',
-  withCredentials: true, // ✅ Always send cookies
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // ✅ Always include credentials (cookies)
 });
 
+// Request interceptor (optional if token-based auth is not used)
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle errors
 API.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -23,12 +41,12 @@ API.interceptors.response.use(
 
       if (status === 401) {
         toast.error('Session expired. Logging out...');
-        authContextLogoutFunction();
+        authContextLogoutFunction(); // Trigger global logout
         setTimeout(() => {
           window.location.href = '/login';
         }, 1500);
       } else {
-        toast.error(data.message || 'An error occurred');
+        toast.error(data.message || 'An error occurred.');
       }
     } else {
       toast.error('Network error. Please check your connection.');
