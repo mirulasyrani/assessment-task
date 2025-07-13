@@ -38,12 +38,12 @@ const register = async (req, res, next) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Insert new recruiter
+    // ✅ Insert new recruiter (includes `name`)
     const newRecruiter = await pool.query(
-      `INSERT INTO recruiters (username, full_name, email, password_hash)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO recruiters (username, full_name, email, password_hash, name)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id, username, full_name, email, created_at`,
-      [username, full_name, email, hashedPassword]
+      [username, full_name, email, hashedPassword, full_name]
     );
 
     // Check JWT_SECRET
