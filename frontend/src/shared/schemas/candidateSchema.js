@@ -1,3 +1,4 @@
+// frontend/src/shared/schemas/candidateSchema.js
 import { z } from 'zod';
 
 /**
@@ -83,15 +84,15 @@ const notesField = z
  */
 const CandidateStatus = z.enum([
   'applied',
-  'screening', 
+  'screening',
   'interview',
   'offer',
   'hired',
   'rejected',
   'withdrawn'
 ], {
-  errorMap: () => ({ 
-    message: 'Invalid application status. Must be one of: applied, screening, interview, offer, hired, rejected, withdrawn.' 
+  errorMap: () => ({
+    message: 'Invalid application status. Must be one of: applied, screening, interview, offer, hired, rejected, withdrawn.'
   }),
 });
 
@@ -99,8 +100,8 @@ const CandidateStatus = z.enum([
  * Priority levels for candidate tracking
  */
 const CandidatePriority = z.enum(['low', 'medium', 'high', 'urgent'], {
-  errorMap: () => ({ 
-    message: 'Invalid priority level. Must be one of: low, medium, high, urgent.' 
+  errorMap: () => ({
+    message: 'Invalid priority level. Must be one of: low, medium, high, urgent.'
   }),
 });
 
@@ -148,8 +149,8 @@ const createCandidateSchema = z.object({
     .nullable(),
   source: z
     .enum(['website', 'linkedin', 'referral', 'job_board', 'agency', 'other'], {
-      errorMap: () => ({ 
-        message: 'Invalid source. Must be one of: website, linkedin, referral, job_board, agency, other.' 
+      errorMap: () => ({
+        message: 'Invalid source. Must be one of: website, linkedin, referral, job_board, agency, other.'
       }),
     })
     .default('website'),
@@ -205,8 +206,8 @@ const updateCandidateSchema = z.object({
     .nullable(),
   source: z
     .enum(['website', 'linkedin', 'referral', 'job_board', 'agency', 'other'], {
-      errorMap: () => ({ 
-        message: 'Invalid source. Must be one of: website, linkedin, referral, job_board, agency, other.' 
+      errorMap: () => ({
+        message: 'Invalid source. Must be one of: website, linkedin, referral, job_board, agency, other.'
       }),
     })
     .optional(),
@@ -242,8 +243,8 @@ const bulkCandidateOperationSchema = z.object({
     .min(1, 'At least one candidate ID is required.')
     .max(100, 'Cannot process more than 100 candidates at once.'),
   operation: z.enum(['update_status', 'update_priority', 'delete'], {
-    errorMap: () => ({ 
-      message: 'Invalid operation. Must be one of: update_status, update_priority, delete.' 
+    errorMap: () => ({
+      message: 'Invalid operation. Must be one of: update_status, update_priority, delete.'
     }),
   }),
   data: z.object({
@@ -298,49 +299,6 @@ const candidateErrorResponseSchema = z.object({
     message: z.string(),
   })).optional(),
 });
-
-// JSDoc type definitions for better IDE support
-/**
- * @typedef {Object} CreateCandidateInput
- * @property {string} name
- * @property {string} email
- * @property {string} [phone]
- * @property {string} position
- * @property {string} [skills]
- * @property {number} [experience_years]
- * @property {string} [status]
- * @property {string} [priority]
- * @property {string} [notes]
- * @property {string} [resume_url]
- * @property {string} [linkedin_url]
- * @property {string} [portfolio_url]
- * @property {number} [expected_salary]
- * @property {string} [availability_date]
- * @property {string} [source]
- */
-
-/**
- * @typedef {Object} CandidateResponse
- * @property {string} id
- * @property {string} name
- * @property {string} email
- * @property {string|null} phone
- * @property {string} position
- * @property {string|null} skills
- * @property {number|null} experience_years
- * @property {string} status
- * @property {string} priority
- * @property {string|null} notes
- * @property {string|null} resume_url
- * @property {string|null} linkedin_url
- * @property {string|null} portfolio_url
- * @property {number|null} expected_salary
- * @property {string|null} availability_date
- * @property {string} source
- * @property {string} created_at
- * @property {string} updated_at
- * @property {string} recruiter_id
- */
 
 // Export schemas
 export {
