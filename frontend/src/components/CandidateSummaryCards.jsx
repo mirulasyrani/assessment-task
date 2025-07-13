@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import API from '../services/api';
 import Loader from './Loader';
 import './CandidateSummaryCards.css';
-// import { toast } from 'react-toastify';
 
 const STATUS_OPTIONS = [
   'applied',
@@ -26,22 +25,31 @@ const CandidateSummaryCards = () => {
     const fetchSummary = async () => {
       try {
         setLoading(true);
+        setError('');
 
         const res = await API.get('/candidates/summary');
-        const data = res.data;
+        let data = res.data;
 
-        // ✅ Log backend response for debugging
-        console.log('📊 Summary data from backend:', data);
+        // ✅ Support both { applied: 1, ... } or { data: { applied: 1, ... } }
+        if (data && typeof data === 'object' && 'data' in data && typeof data.data === 'object') {
+          data = data.data;
+        }
 
-        const initialCounts = STATUS_OPTIONS.reduce((acc, status) => {
-          acc[status] = data[status] || 0;
-          return acc;
-        }, { total: data.total || 0 });
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid response format from backend.');
+        }
 
-        setSummary(initialCounts);
+        // 🔁 Normalize into expected structure
+        const normalized = STATUS_OPTIONS.reduce(
+          (acc, status) => ({ ...acc, [status]: data[status] || 0 }),
+          { total: data.total || 0 }
+        );
+
+        setSummary(normalized);
       } catch (err) {
         console.error('❌ Failed to fetch summary from backend:', err);
         setError('Failed to load candidate summary. Please try again later.');
+        setSummary({});
       } finally {
         setLoading(false);
       }
@@ -50,17 +58,9 @@ const CandidateSummaryCards = () => {
     fetchSummary();
   }, []);
 
-  if (loading) {
-    return <Loader />;
-  }
-
-  if (error) {
-    return <p className="error-message" role="alert">{error}</p>;
-  }
-
-  if ((summary.total ?? 0) === 0) {
-    return <p className="no-data-message">No candidates available to summarize.</p>;
-  }
+  if (loading) return <Loader />;
+  if (error) return <p className="error-message" role="alert">{error}</p>;
+  if ((summary.total ?? 0) === 0) return <p className="no-data-message">No candidates available to summarize.</p>;
 
   return (
     <div className="candidate-summary-cards-container" aria-label="Candidate Summary Overview">

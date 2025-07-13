@@ -7,32 +7,29 @@ import Loader from '../components/Loader';
 import Modal from '../components/Modal';
 import { formatDate } from '../utils/formatDate';
 import { toast } from 'react-toastify';
-import CandidateSummaryCards from '../components/CandidateSummaryCards'; // Assuming this component fetches its own summary
+import CandidateSummaryCards from '../components/CandidateSummaryCards';
 
-// Define available statuses (should match your backend enum)
-const CANDIDATE_STATUSES = ['all', 'applied', 'screening', 'interview', 'offer', 'hired', 'rejected', 'withdrawn']; // Added 'withdrawn'
+const CANDIDATE_STATUSES = ['all', 'applied', 'screening', 'interview', 'offer', 'hired', 'rejected', 'withdrawn'];
 
 const Dashboard = () => {
   const [candidates, setCandidates] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('date'); // 'date' for created_at (newest), 'name' for alphabetical
-  const [selectedCandidate, setSelectedCandidate] = useState(null); // Renamed for clarity
-  const [showFormModal, setShowFormModal] = useState(false); // Renamed for clarity
+  const [sortBy, setSortBy] = useState('date');
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [showFormModal, setShowFormModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // --- Utility for Frontend Error Logging ---
   const logFrontendErrorToBackend = useCallback(async (error, context) => {
     try {
       const errorDetails = {
         message: error.message || 'Unknown error',
         stack: error.stack,
-        context: context,
-        // Safely access properties from Axios error objects
+        context,
         response_data: error.response?.data,
         response_status: error.response?.status,
-        url: error.config?.url || window.location.href, // Fallback to current URL
-        method: error.config?.method || 'GET', // Fallback method
+        url: error.config?.url || window.location.href,
+        method: error.config?.method || 'GET',
         timestamp: new Date().toISOString(),
       };
       console.warn('Sending frontend error log:', errorDetails);
@@ -42,23 +39,26 @@ const Dashboard = () => {
     }
   }, []);
 
-  // --- Fetch Candidates Function ---
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
     try {
-      // ⭐ RECOMMENDED: Modify to use backend for filtering, searching, and sorting
-      // This assumes your backend has query parameters for these operations
       const params = {
-        ...(filter !== 'all' && { status: filter }), // Add status filter if not 'all'
-        ...(search && { search: search }),           // Add search query if not empty
-        sortBy: sortBy,                              // Add sort by parameter
+        ...(filter !== 'all' && { status: filter }),
+        ...(search && { search }),
+        sortBy,
       };
 
-      // Axios automatically handles query parameters from `params` object
       const res = await API.get('/candidates', { params });
+      console.log('📥 /candidates response:', res.data);
 
-      // If backend handles filtering/sorting, no need for client-side .filter/.sort
-      setCandidates(res.data);
+      if (Array.isArray(res.data)) {
+        setCandidates(res.data);
+      } else if (Array.isArray(res.data.data)) {
+        setCandidates(res.data.data);
+      } else {
+        console.warn('⚠️ Unexpected /candidates response format:', res.data);
+        setCandidates([]);
+      }
     } catch (err) {
       console.error('Error fetching candidates:', err);
       logFrontendErrorToBackend(err, 'fetch_candidates_failure');
@@ -68,26 +68,20 @@ const Dashboard = () => {
     }
   }, [filter, search, sortBy, logFrontendErrorToBackend]);
 
-  // --- Debounce search and filter changes ---
   useEffect(() => {
     const debounceFetch = setTimeout(() => {
       fetchCandidates();
-    }, 300); // 300ms debounce
-
+    }, 300);
     return () => clearTimeout(debounceFetch);
-  }, [fetchCandidates]); // Re-run effect when fetchCandidates changes (due to its dependencies)
-
-  // --- CRUD Operations ---
+  }, [fetchCandidates]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this candidate? This action cannot be undone.')) {
-      return;
-    }
+    if (!window.confirm('Are you sure you want to delete this candidate?')) return;
     try {
-      setLoading(true); // Show loading while deleting
+      setLoading(true);
       await API.delete(`/candidates/${id}`);
       toast.info('Candidate deleted successfully!');
-      fetchCandidates(); // Re-fetch all candidates to update the list
+      fetchCandidates();
     } catch (err) {
       console.error('Error deleting candidate:', err);
       logFrontendErrorToBackend(err, `delete_candidate_failure_id_${id}`);
@@ -102,32 +96,24 @@ const Dashboard = () => {
     setShowFormModal(true);
   };
 
-  // Callback after form submission (add/edit)
   const handleFormSubmitSuccess = () => {
     setShowFormModal(false);
-    setSelectedCandidate(null); // Clear selected candidate state
-    fetchCandidates(); // Re-fetch candidates to reflect changes
+    setSelectedCandidate(null);
+    fetchCandidates();
     toast.success('Candidate saved successfully!');
   };
 
-  // Helper for updating status inline
   const handleStatusChange = async (candidateId, newStatus) => {
-    // Optimistic update: Update UI first for responsiveness, then confirm with backend
-    const originalCandidates = [...candidates]; // Store current state for rollback
+    const originalCandidates = [...candidates];
     setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, status: newStatus } : c));
-    
+
     try {
-      // Fetch the full candidate data to ensure all required fields are sent for PUT request
-      // This avoids issues if the current `candidates` state is a partial view
       const res = await API.get(`/candidates/${candidateId}`);
       const currentCandidateData = res.data;
 
-      // Construct payload for PUT request, ensuring all required fields are present
       const updatedCandidatePayload = {
-        ...currentCandidateData, // Spread all existing fields
-        status: newStatus,       // Override the status
-        // Ensure other non-nullable fields are not sent as null if they were fetched as null
-        // (though backend validation should handle this if not nullable)
+        ...currentCandidateData,
+        status: newStatus,
         name: currentCandidateData.name || '',
         email: currentCandidateData.email || '',
         position: currentCandidateData.position || '',
@@ -139,16 +125,11 @@ const Dashboard = () => {
 
       await API.put(`/candidates/${candidateId}`, updatedCandidatePayload);
       toast.success('Candidate status updated!');
-      // No need to fetchCandidates() if optimistic update was successful
-      // Unless you want to ensure the list is consistent with backend immediately after update
-      // For simplicity, re-fetch for now to update summary cards and re-sort if status affects order
-      fetchCandidates(); 
-
+      fetchCandidates();
     } catch (err) {
       console.error('🔥 Error updating status:', err?.response?.data || err);
       logFrontendErrorToBackend(err, `status_update_failure_id_${candidateId}`);
       toast.error('Failed to update status.');
-      // Rollback UI on error
       setCandidates(originalCandidates);
     }
   };
@@ -160,14 +141,11 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -30 }}
         transition={{ duration: 0.4 }}
-        className="dashboard-container" // Add a class for dashboard specific layout
+        className="dashboard-container"
       >
-        <h1 className="dashboard-title">Candidate Dashboard</h1> {/* Use h1 for main page title */}
-
-        {/* Candidate Summary Cards - Assuming this component fetches its own data */}
+        <h1 className="dashboard-title">Candidate Dashboard</h1>
         <CandidateSummaryCards />
 
-        {/* Controls Section: Search, Sort, Add Candidate */}
         <div className="dashboard-controls-section">
           <div className="search-sort-group">
             <input
@@ -193,7 +171,6 @@ const Dashboard = () => {
             </label>
           </div>
 
-          {/* Filter Buttons & Add Candidate Button */}
           <div className="filter-add-group">
             {CANDIDATE_STATUSES.map((status) => (
               <button
@@ -201,7 +178,7 @@ const Dashboard = () => {
                 onClick={() => setFilter(status)}
                 className={`filter-btn ${filter === status ? 'active' : ''}`}
               >
-                {status.charAt(0).toUpperCase() + status.slice(1)} {/* Capitalize status */}
+                {status.charAt(0).toUpperCase() + status.slice(1)}
               </button>
             ))}
             <button className="add-candidate-btn" onClick={() => setShowFormModal(true)}>+ Add Candidate</button>
@@ -215,19 +192,20 @@ const Dashboard = () => {
 
         {loading ? (
           <Loader />
+        ) : !Array.isArray(candidates) ? (
+          <p className="error-message">⚠️ Unexpected data format. Please contact support.</p>
         ) : candidates.length === 0 ? (
           <p className="no-candidates-message">No candidates match your criteria. Try changing filters or add a new one.</p>
         ) : (
-          <ul className="candidate-list"> {/* Added class for styling */}
+          <ul className="candidate-list">
             {candidates.map((c) => (
-              <li className="candidate-card" key={c.id}> {/* Changed from 'card' to 'candidate-card' for specificity */}
+              <li className="candidate-card" key={c.id}>
                 <div className="card-header">
-                    <h3 className="candidate-name">{c.name}</h3>
-                    <span className={`status-badge status-${c.status}`}>{c.status}</span> {/* Re-added status badge */}
+                  <h3 className="candidate-name">{c.name}</h3>
+                  <span className={`status-badge status-${c.status}`}>{c.status}</span>
                 </div>
                 <p className="candidate-position">{c.position}</p>
 
-                {/* Status Update Dropdown */}
                 <div className="status-update-group">
                   <label htmlFor={`status-${c.id}`} className="visually-hidden">Update status for {c.name}</label>
                   <select
@@ -236,9 +214,9 @@ const Dashboard = () => {
                     onChange={(e) => handleStatusChange(c.id, e.target.value)}
                     className="candidate-status-select"
                   >
-                    {CANDIDATE_STATUSES.filter(s => s !== 'all').map((s) => ( // Exclude 'all' from status options
+                    {CANDIDATE_STATUSES.filter(s => s !== 'all').map((s) => (
                       <option key={s} value={s}>
-                        {s.charAt(0).toUpperCase() + s.slice(1)} {/* Capitalize option text */}
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
                       </option>
                     ))}
                   </select>
@@ -264,18 +242,17 @@ const Dashboard = () => {
         )}
       </motion.div>
 
-      {/* Modal for Add/Edit Candidate Form */}
       <Modal
         show={showFormModal}
         onClose={() => {
           setShowFormModal(false);
-          setSelectedCandidate(null); // Clear selected candidate on close
+          setSelectedCandidate(null);
         }}
-        ariaLabelledBy="candidate-form-title" // ID of the h2/h3 inside CandidateForm
-        ariaDescribedBy="candidate-form-description" // Optional: ID of a description
+        ariaLabelledBy="candidate-form-title"
+        ariaDescribedBy="candidate-form-description"
       >
         <CandidateForm
-          initialData={selectedCandidate} // Renamed for clarity
+          initialData={selectedCandidate}
           onClose={() => {
             setShowFormModal(false);
             setSelectedCandidate(null);
