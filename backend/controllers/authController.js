@@ -14,17 +14,14 @@ const register = async (req, res, next) => {
   try {
     console.log('Register request received:', req.body);
 
-    // Validate entire request body including confirmPassword
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
       console.error('Validation error during registration:', parsed.error);
       return next(parsed.error);
     }
 
-    // Destructure only fields needed for DB insert (ignore confirmPassword)
     const { username, full_name, email, password } = parsed.data;
 
-    // Check for existing user
     const userExists = await pool.query(
       'SELECT 1 FROM recruiters WHERE email = $1 OR username = $2',
       [email, username]
@@ -35,10 +32,8 @@ const register = async (req, res, next) => {
       return next(new CustomError('User with that email or username already exists.', 409));
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // ✅ Insert new recruiter (includes `name`)
     const newRecruiter = await pool.query(
       `INSERT INTO recruiters (username, full_name, email, password_hash, name)
        VALUES ($1, $2, $3, $4, $5)
@@ -46,22 +41,19 @@ const register = async (req, res, next) => {
       [username, full_name, email, hashedPassword, full_name]
     );
 
-    // Check JWT_SECRET
     if (!process.env.JWT_SECRET) {
       console.error('JWT_SECRET is not defined in environment variables!');
       return next(new CustomError('Server configuration error.', 500));
     }
 
-    // Sign token
     const token = jwt.sign({ userId: newRecruiter.rows[0].id }, process.env.JWT_SECRET, {
       expiresIn: '7d',
     });
 
-    // Send cookie and response
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'None', // ✅ Important for cross-origin
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     }).status(201).json({
       user: {
@@ -120,7 +112,7 @@ const login = async (req, res, next) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'None', // ✅ Important for cross-origin
       maxAge: 7 * 24 * 60 * 60 * 1000,
     }).status(200).json({
       user: {
@@ -175,7 +167,7 @@ const logout = async (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'None', // ✅ Important for cross-origin
   }).status(200).json({ message: 'Logged out successfully.' });
 };
 
