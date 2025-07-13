@@ -7,24 +7,21 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 console.log('🟢 Starting server setup...');
-app.set('trust proxy', 1); // Trust Render or Vercel proxy
+app.set('trust proxy', 1); // Important for correct cookie handling behind proxy
 
-// ✅ Centralize allowed origins
+// ✅ Allowed frontend URLs
 const allowedOrigins = [
   'https://assessment-task-five.vercel.app',
   'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
   'http://localhost:3000',
 ];
 
-// ✅ Strict CORS configuration
+// ✅ CORS setup
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like curl, mobile apps)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+      if (!origin) return callback(null, true); // Allow mobile/curl/etc.
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -34,8 +31,14 @@ app.use(
 );
 
 // ✅ Middleware
+app.use(cookieParser()); // Must come before route handlers
 app.use(express.json());
-app.use(cookieParser());
+
+// ✅ Debugging helper: log cookies for every request (remove in prod)
+app.use((req, res, next) => {
+  console.log(`🍪 Incoming cookies:`, req.cookies || 'None');
+  next();
+});
 
 // ✅ Optional frontend error logger
 app.post('/api/logs/frontend-error', (req, res) => {
@@ -59,7 +62,7 @@ app.post('/api/logs/frontend-error', (req, res) => {
   res.status(200).json({ message: 'Frontend error log received.' });
 });
 
-// ✅ Route logger helper
+// ✅ Route logger
 const logRoutes = (basePath, router) => {
   try {
     router.stack.forEach((layer) => {
@@ -104,17 +107,17 @@ try {
   console.error('❌ Failed to mount /api/candidates routes:', err.stack || err);
 }
 
-// ✅ 404 Handler
+// ✅ 404 fallback
 app.use((req, res) => {
   res.status(404).json({
     message: `API endpoint not found: ${req.method} ${req.originalUrl}`,
   });
 });
 
-// ✅ Global Error Handler
+// ✅ Global error handler
 app.use(errorHandler);
 
-// ✅ Start Server
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);

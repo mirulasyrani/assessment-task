@@ -1,4 +1,3 @@
-// frontend/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import API, { setAuthContextLogout } from '../services/api';
 
@@ -11,7 +10,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await API.get('/auth/me');
+      const response = await API.get('/auth/me'); // cookies included via api.js
       console.log('✅ /auth/me response:', response.data);
 
       if (response.data?.user) {
@@ -37,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await API.post('/auth/logout');
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('❌ Logout failed:', error);
     } finally {
       setUser(null);
     }
@@ -80,8 +79,8 @@ export const AuthProvider = ({ children }) => {
   const isAuthenticated = () => !!user;
 
   useEffect(() => {
-    setAuthContextLogout(logout);
-    fetchUser();
+    setAuthContextLogout(logout); // make logout available to api.js interceptor
+    fetchUser(); // on app load
   }, []);
 
   return (

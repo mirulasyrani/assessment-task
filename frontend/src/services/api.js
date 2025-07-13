@@ -1,38 +1,43 @@
-// frontend/services/api.js
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 let authContextLogoutFunction = () => {};
 
+/**
+ * This function is set from AuthContext
+ */
 export const setAuthContextLogout = (logoutFn) => {
   authContextLogoutFunction = logoutFn;
 };
 
 const API = axios.create({
   baseURL: 'https://assessment-task-1.onrender.com/api',
-  withCredentials: true, // ✅ Include cookies in cross-origin requests
+  withCredentials: true, // ✅ Send cookies with requests
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Global response error handler
+// Global error handler for API responses
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
+    const message = error.response?.data?.message || 'Something went wrong.';
 
     if (status === 401) {
-      if (!window.location.pathname.includes('/login')) {
+      // Avoid logout loop on login page
+      const isOnLoginPage = window.location.pathname.includes('/login');
+      if (!isOnLoginPage) {
         toast.error('Session expired. Logging out...');
-        authContextLogoutFunction?.();
+        if (authContextLogoutFunction) authContextLogoutFunction();
+
         setTimeout(() => {
           window.location.href = '/login';
         }, 1200);
       }
-    } else if (status !== 404) {
-      // Prevent toast spam on missing routes like /auth/me during first load
-      const message = error.response?.data?.message || 'Something went wrong';
+    } else if (status && status !== 404) {
+      // Avoid spamming for 404 on /me (first load)
       toast.error(message);
     }
 

@@ -18,7 +18,7 @@ const generateToken = (userId) => {
 };
 
 /**
- * Send Auth Cookie
+ * Send Auth Cookie (with debug logging)
  */
 const sendAuthCookie = (res, token) => {
   res.cookie('token', token, {
@@ -26,6 +26,12 @@ const sendAuthCookie = (res, token) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'None',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+
+  console.log('✅ Auth cookie set:', {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'None',
+    httpOnly: true,
   });
 };
 
@@ -173,6 +179,7 @@ const logout = async (req, res) => {
     sameSite: 'None',
   });
 
+  console.log('🚪 Auth cookie cleared.');
   res.status(200).json({ message: 'Logged out successfully.' });
 };
 
