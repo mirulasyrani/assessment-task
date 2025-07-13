@@ -1,29 +1,38 @@
 const express = require('express');
 const router = express.Router();
+
 const authMiddleware = require('../middleware/authMiddleware');
-const validate = require('../middleware/validate'); // ✅ Zod middleware
-const { candidateSchema } = require('../validation/candidateSchema'); // ✅ Zod schema
+const validate = require('../middleware/validate');
+const { candidateSchema, updateCandidateSchema } = require('../../shared/schemas/candidateSchema');
 
 const {
-  getCandidates,
-  searchCandidates,
-  filterCandidates,
-  createCandidate,
-  updateCandidate,
-  deleteCandidate,
+    getCandidates,
+    searchCandidates,
+    filterCandidates,
+    createCandidate,
+    updateCandidate,
+    deleteCandidate,
 } = require('../controllers/candidateController');
 
-// ✅ Protect all candidate routes
+// All routes in this router require authentication
 router.use(authMiddleware);
 
-// ✅ Routes
+// Get all candidates
 router.get('/', getCandidates);
+
+// Search candidates
 router.get('/search', searchCandidates);
+
+// Filter candidates by status
 router.get('/filter', filterCandidates);
 
-// ✅ Zod validation middleware applied here:
+// Create new candidate
 router.post('/', validate(candidateSchema), createCandidate);
-router.put('/:id', validate(candidateSchema), updateCandidate); 
-router.delete('/:id', deleteCandidate);                      
+
+// Update candidate by ID
+router.put('/:id', validate(updateCandidateSchema), updateCandidate);
+
+// Delete candidate by ID
+router.delete('/:id', deleteCandidate);
 
 module.exports = router;

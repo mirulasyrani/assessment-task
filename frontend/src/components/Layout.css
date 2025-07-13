@@ -1,3 +1,10 @@
+/* ✅ Base Reset (recommended) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 /* 🌐 NAVIGATION BAR */
 .nav {
   background-color: #1f2937;
@@ -25,11 +32,27 @@
   font-size: 16px;
   cursor: pointer;
   color: white;
+  transition: color 0.2s ease;
 }
 
 .nav a:hover,
 .nav button:hover {
   text-decoration: underline;
+  color: #facc15;
+}
+
+/* ✅ Optional: Active tab indicator */
+.nav a.active {
+  border-bottom: 2px solid #facc15;
+}
+
+/* ✅ Focus visible outline (accessibility) */
+.nav a:focus-visible,
+.nav button:focus-visible,
+.filter-btn:focus-visible,
+.card-actions button:focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
 }
 
 /* 🚪 NAV BUTTON STYLE */
@@ -43,11 +66,12 @@
   text-decoration: none;
   display: inline-block;
   text-align: center;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .nav-btn:hover {
   background-color: #2563eb;
+  transform: translateY(-1px);
 }
 
 .nav-btn:disabled {
@@ -57,7 +81,7 @@
 
 /* 📄 PAGE WRAPPER */
 .page-wrapper {
-  max-width: 600px;
+  max-width: 900px; /* was 600px — gives more room for dashboard */
   margin: auto;
   padding: 20px;
 }
@@ -70,6 +94,11 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.filter-btn:hover {
+  background-color: #d1d5db;
 }
 
 .filter-btn.active {
@@ -98,6 +127,7 @@
   border: none;
   font-size: 18px;
   cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
 .card-actions button:hover {
@@ -119,23 +149,18 @@
 .status-applied {
   background-color: #6b7280;
 }
-
 .status-screening {
   background-color: #3b82f6;
 }
-
 .status-interview {
   background-color: #f97316;
 }
-
 .status-offer {
   background-color: #8b5cf6;
 }
-
 .status-hired {
   background-color: #10b981;
 }
-
 .status-rejected {
   background-color: #ef4444;
 }
@@ -169,6 +194,27 @@ body.dark .status-badge {
   opacity: 0.9;
 }
 
+/* 🌓 DARK MODE: Inputs */
+body.dark input,
+body.dark select,
+body.dark textarea {
+  background-color: #1e293b;
+  color: #f3f4f6;
+  border: 1px solid #334155;
+}
+
+body.dark input::placeholder,
+body.dark textarea::placeholder {
+  color: #94a3b8;
+}
+
+body.dark .nav-btn {
+  background-color: #334155;
+}
+body.dark .nav-btn:hover {
+  background-color: #2563eb;
+}
+
 /* 📱 RESPONSIVE STYLES */
 @media (max-width: 480px) {
   .page-wrapper {
@@ -190,27 +236,86 @@ body.dark .status-badge {
     padding: 12px;
   }
 
-  /* 🌓 DARK MODE: INPUTS, SELECTS, TEXTAREAS */
-    body.dark input,
-    body.dark select,
-    body.dark textarea {
-    background-color: #1e293b;
-    color: #f3f4f6;
-    border: 1px solid #334155;
-    }
+  .card-actions {
+    flex-wrap: wrap;
+  }
 
-    body.dark input::placeholder,
-    body.dark textarea::placeholder {
-    color: #94a3b8;
-    }
+  .filter-btn {
+    font-size: 14px;
+    padding: 4px 10px;
+  }
 
-    /* 🌓 DARK NAV BUTTONS */
-    body.dark .nav-btn {
-    background-color: #334155;
-    }
+/* HomePage specific styles */
+.homepage-section {
+  padding: 20px;
+  max-width: 800px; /* Optional: constrain width for better readability */
+  margin: 40px auto; /* Center the content */
+  text-align: center; /* Center align text for welcome section */
+}
 
-    body.dark .nav-btn:hover {
-    background-color: #2563eb;
-    }
+.homepage-section h2 {
+  font-size: 2.5em;
+  margin-bottom: 15px;
+  color: #333; /* Darker text for light mode */
+}
+
+.homepage-section p {
+  font-size: 1.1em;
+  line-height: 1.6;
+  color: #555;
+  margin-bottom: 30px;
+}
+
+.homepage-buttons-group {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center; /* Center buttons */
+  gap: 15px; /* Space between buttons */
+}
+
+/* Dark Mode for HomePage specific elements */
+body.dark .homepage-section h2 {
+  color: #f3f4f6; /* Lighter text for dark mode */
+}
+
+body.dark .homepage-section p {
+  color: #cccccc;
+}
+
+/* NotFound specific styles */
+.not-found-container {
+  text-align: center;
+  margin-top: 50px;
+  padding: 20px; /* Add some padding for smaller screens */
+}
+
+.not-found-container h1 {
+  font-size: 6em; /* Make it even larger for impact */
+  margin-bottom: 10px;
+  color: #ef4444; /* A striking error color */
+}
+
+.not-found-container p {
+  font-size: 1.2em;
+  color: #666;
+  margin-bottom: 30px;
+  max-width: 500px; /* Constrain width for readability */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.not-found-link-wrapper {
+  margin-top: 20px;
+  display: inline-block; /* Keep the nav-btn styling consistent */
+}
+
+/* Dark Mode for NotFound specific elements */
+body.dark .not-found-container h1 {
+  color: #f87171; /* Lighter red for dark mode */
+}
+
+body.dark .not-found-container p {
+  color: #aaaaaa;
+}
 
 }

@@ -1,16 +1,73 @@
+/* frontend/src/components/Loader.css */
+
+/* 🔄 LOADER STYLING */
 .loader {
   text-align: center;
   padding: 1rem;
   font-weight: bold;
-  color: #007bff;
+  color: #007bff; /* Primary blue for light mode */
+  /* If you want it to center the loader itself within its parent, use: */
+  /* display: flex; */
+  /* justify-content: center; */
+  /* align-items: center; */
+  /* flex-direction: column; /* if text should be below spinner */
+  /* If it replaces content, inline-flex is fine */
+  display: inline-flex; /* Keeps spinner and text inline */
+  align-items: center; /* Vertically centers spinner and text */
+  justify-content: center; /* Horizontally centers content within itself if flex-container */
+  gap: 8px; /* Space between spinner and text */
+  font-size: 16px; /* Base font size */
 }
 
-.card {
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+/* 💫 Spinning animation indicator */
+.spinner {
+  width: 16px; /* Spinner size */
+  height: 16px;
+  border: 3px solid #007bff; /* Primary blue border for light mode */
+  border-top-color: transparent; /* Makes the top transparent for spin effect */
+  border-radius: 50%; /* Makes it a circle */
+  animation: spin 1s linear infinite; /* Apply the spin animation */
+  vertical-align: middle; /* Aligns with text if not using flex for parent */
+  flex-shrink: 0; /* Prevents spinner from shrinking if in a flex container */
 }
 
+/* Spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Visually hidden text for screen readers (often in a global utility CSS file) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* 🌙 DARK MODE SUPPORT */
+body.dark .loader {
+  color: #60a5fa; /* Lighter blue for dark mode text */
+}
+
+body.dark .spinner {
+  border-color: #60a5fa; /* Lighter blue for dark mode spinner */
+  border-top-color: transparent; /* Keep top transparent */
+}
+
+/* 📱 RESPONSIVE DESIGN */
+@media (max-width: 480px) {
+  .loader {
+    font-size: 14px; /* Smaller font for mobile */
+  }
+
+  .spinner {
+    width: 14px; /* Smaller spinner for mobile */
+    height: 14px;
+  }
+}

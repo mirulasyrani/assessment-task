@@ -2,33 +2,29 @@ const express = require('express');
 const router = express.Router();
 
 const {
-  register,
-  login,
-  getMe,
-  resetPassword,
+    register,
+    login,
+    getMe,
+    logout
 } = require('../controllers/authController');
-
 const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
-const authLimiter = require('../middleware/rateLimiter'); // ✅ Rate limiter
-
-// ✅ Import Zod schemas
+const { authLimiter } = require('../middleware/rateLimiter');
 const {
-  registerSchema,
-  loginSchema,
-  resetPasswordSchema,
-} = require('../validation/authSchema');
+    registerSchema,
+    loginSchema
+} = require('../../shared/schemas/authSchema');
 
-// 🔐 Register new user
+// Recruiter registration
 router.post('/register', authLimiter, validate(registerSchema), register);
 
-// 🔐 Login existing user
+// Recruiter login
 router.post('/login', authLimiter, validate(loginSchema), login);
 
-// 🔐 Get current user profile (protected)
+// Get current user profile (protected)
 router.get('/me', authMiddleware, getMe);
 
-// 🧪 Dev/test: Reset password (rate-limited)
-router.post('/reset-password', authLimiter, validate(resetPasswordSchema), resetPassword);
+// Log out recruiter
+router.post('/logout', logout);
 
 module.exports = router;

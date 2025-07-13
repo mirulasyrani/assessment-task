@@ -1,0 +1,53 @@
+.form {
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.label {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.input {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  transition: border-color 0.3s ease;
+}
+
+.input:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 14px;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+
+.button {
+  padding: 12px 20px;
+  font-size: 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.button:disabled {
+  background-color: #a1a1aa;
+  cursor: not-allowed;
+}
+
+.button:hover:not(:disabled) {
+  background-color: #2563eb;
+}

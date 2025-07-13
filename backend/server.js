@@ -1,134 +1,141 @@
+// backend\server.js
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+const cookieParser = require('cookie-parser');
+require('dotenv').config(); // Load environment variables from .env file
+
+// Import global error handler middleware
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// Log startup
 console.log('🟢 Starting server setup...');
 
-// Trust proxy (for rate limiting, etc.)
+// Enable trust proxy for correct IP detection behind proxies (e.g., Vercel, Render)
+// This is crucial for rate limiting to work accurately based on client IP.
 app.set('trust proxy', 1);
 
-// ✅ Setup CORS
-// IMPORTANT: Add the Render URL where your frontend is deployed.
-// Render dynamically assigns URLs like https://your-app-name-xxxx.onrender.com
-// You MUST replace 'https://assessment-task-1.onrender.com' with your actual frontend's Render URL.
+// Define allowed origins for CORS (Cross-Origin Resource Sharing)
+// This list should be updated with your actual frontend deployment URLs.
 const allowedOrigins = [
   'https://assessment-task-five.vercel.app',
   'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
-  'https://assessment-task-1.onrender.com', // <--- REPLACE THIS with your ACTUAL FRONTEND RENDER URL
-  'http://localhost:3000', // For local frontend development
-  'http://localhost:5173', // Common for Vite/React dev server
+  // IMPORTANT: Replace this with your actual deployed frontend URL on Render/Railway
+  'https://your-frontend-render-url.onrender.com', // Example: 'https://my-recruitment-tracker-frontend.onrender.com'
+  'http://localhost:3000', // For local development
 ];
 
+// Configure CORS middleware
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, or curl requests)
-    // and requests from allowed origins.
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
+    // or from origins present in the allowedOrigins list.
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.error(`❌ CORS blocked for origin: ${origin}`);
-      callback(new Error('CORS not allowed by server policy'));
+      callback(new Error('Not allowed by CORS policy.')); // Block the request
     }
   },
-  credentials: true,
+  credentials: true, // Allow cookies to be sent with requests
+  optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 
-// ✅ Preflight request handler
-// It's crucial for complex HTTP methods (like PUT, DELETE) and custom headers.
-// Ensure this also allows all your 'allowedOrigins'.
+// Handle pre-flight requests for all routes (important for complex CORS scenarios)
 app.options('/*', cors({
-  origin: allowedOrigins, // Use the full list of allowed origins for preflight
+  origin: allowedOrigins,
   credentials: true,
+  optionsSuccessStatus: 200,
 }));
 
-// Body parser - ESSENTIAL for parsing JSON request bodies (like the one from frontend error logs)
+// Built-in middleware to parse incoming JSON payloads
 app.use(express.json());
 
-// --- FIX: NEW Frontend Error Logging Endpoint ---
-// This endpoint receives error reports from your client-side (Dashboard.js)
-// and logs them to your backend's stdout, which Render captures.
-// Placement here is good: after body parser, before other specific routes or global error handlers.
-app.post('/api/logs/frontend-error', (req, res) => {
-    const errorData = req.body;
-    console.error('--- FRONTEND ERROR REPORT ---');
-    console.error('Context:', errorData.context);
-    console.error('Message:', errorData.message);
-    console.error('URL:', errorData.url);
-    console.error('Method:', errorData.method);
-    console.error('Timestamp:', errorData.timestamp);
-    if (errorData.response_status) {
-        console.error('Backend Response Status (from failed API call):', errorData.response_status);
-    }
-    if (errorData.response_data) {
-        // Stringify complex objects for better readability in logs
-        console.error('Backend Response Data (from failed API call):', JSON.stringify(errorData.response_data, null, 2));
-    }
-    if (errorData.stack) {
-        console.error('Stack Trace (from frontend error):');
-        console.error(errorData.stack);
-    }
-    console.error('-----------------------------');
-    res.status(200).json({ message: 'Error log received by backend' });
-});
-// ---------------------------------------------
+// Middleware to parse cookies attached to the client request object
+app.use(cookieParser());
 
-// 🔍 Helper to log route paths
+/**
+ * Endpoint for frontend error logging.
+ * Frontend applications can send error details to this endpoint for server-side logging.
+ */
+app.post('/api/logs/frontend-error', (req, res) => {
+  const errorData = req.body;
+  console.error('\n--- FRONTEND ERROR REPORT ---');
+  console.error('Context:', errorData.context || 'N/A');
+  console.error('Message:', errorData.message || 'No message provided');
+  console.error('URL:', errorData.url || 'N/A');
+  console.error('Method:', errorData.method || 'N/A');
+  console.error('Timestamp:', errorData.timestamp || new Date().toISOString());
+  if (errorData.response_status) {
+    console.error('Backend Response Status (from failed API call):', errorData.response_status);
+  }
+  if (errorData.response_data) {
+    console.error('Backend Response Data (from failed API call):', JSON.stringify(errorData.response_data, null, 2));
+  }
+  if (errorData.stack) {
+    console.error('Stack Trace (from frontend error):');
+    console.error(errorData.stack);
+  }
+  console.error('-----------------------------\n');
+  res.status(200).json({ message: 'Frontend error log received by backend.' });
+});
+
+/**
+ * Helper function to log mounted routes for debugging purposes.
+ * @param {string} basePath - The base path for the router.
+ * @param {express.Router} router - The Express router instance.
+ */
 const logRoutes = (basePath, router) => {
   try {
-    router.stack?.forEach((layer) => {
-      if (layer.route?.path) {
-        console.log(`🔍 Route added: ${basePath}${layer.route.path} (${Object.keys(layer.route.methods).join(', ').toUpperCase()})`);
-      } else if (layer.name === 'router' && layer.handle?.stack) {
-        // Handle nested routers (e.g., if authRoutes or candidateRoutes are Express.Router instances)
+    router.stack.forEach((layer) => {
+      if (layer.route) { // Routes registered directly on the router
+        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+        console.log(`🔍 Route: ${methods} ${basePath}${layer.route.path}`);
+      } else if (layer.name === 'router' && layer.handle.stack) { // Nested routers
         layer.handle.stack.forEach((nestedLayer) => {
-          if (nestedLayer.route?.path) {
-            console.log(`🔍 Nested Route added: ${basePath}${layer.regexp.source.replace(/\\|\^|\$/g, '')}${nestedLayer.route.path} (${Object.keys(nestedLayer.route.methods).join(', ').toUpperCase()})`);
+          if (nestedLayer.route) {
+            const methods = Object.keys(nestedLayer.route.methods).join(', ').toUpperCase();
+            // This regexp logic needs to be robust for nested routers
+            const nestedPath = nestedLayer.route.path === '/' ? '' : nestedLayer.route.path;
+            console.log(`🔍 Route: ${methods} ${basePath}${nestedPath}`);
           }
         });
       }
     });
   } catch (err) {
-    console.error(`⚠️ Failed to log routes for ${basePath}`, err);
+    console.error(`⚠️ Failed to log routes for ${basePath}:`, err.message);
   }
 };
 
-// ✅ Mount /api/auth
+// Mount API routes
 try {
+  // Corrected path: require('./routes/auth.js')
   const authRoutes = require('./routes/auth');
   app.use('/api/auth', authRoutes);
-  logRoutes('/api/auth', authRoutes); // 🔍 Log each route
-  console.log('✅ Mounted /api/auth');
+  logRoutes('/api/auth', authRoutes);
+  console.log('✅ Mounted /api/auth routes.');
 } catch (err) {
-  console.error('❌ Failed to mount /api/auth:', err.stack || err);
+  console.error('❌ Failed to mount /api/auth routes:', err.stack || err);
 }
 
-// ✅ Mount /api/candidates
 try {
+  // Corrected path: require('./routes/candidates.js')
   const candidateRoutes = require('./routes/candidates');
   app.use('/api/candidates', candidateRoutes);
-  logRoutes('/api/candidates', candidateRoutes); // 🔍 Log each route
-  console.log('✅ Mounted /api/candidates');
+  logRoutes('/api/candidates', candidateRoutes);
+  console.log('✅ Mounted /api/candidates routes.');
 } catch (err) {
-  console.error('❌ Failed to mount /api/candidates:', err.stack || err);
+  console.error('❌ Failed to mount /api/candidates routes:', err.stack || err);
 }
 
-// ✅ Global error handler
-// This catches any unhandled errors that occur in your routes or middleware
-// and ensures a generic 500 response is sent.
-// This should be the LAST middleware/route defined.
-app.use((err, req, res, next) => {
-  console.error('🔥 Unhandled server error caught by global handler:', err.stack || err);
-  res.status(500).json({ message: 'Internal Server Error' });
-});
+// Global error handling middleware (must be the last middleware added)
+app.use(errorHandler);
 
-// Start server
-// Use process.env.PORT provided by Render, or default to 5000 for local development.
-// Render typically provides PORT=10000 for web services.
+// Set the port from environment variables or default to 5000
 const PORT = process.env.PORT || 5000;
+
+// Start the server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`Using PORT: ${PORT} (from process.env.PORT: ${process.env.PORT || 'not set'})`); // Added for clarity in logs
+  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
+  console.log(`Access backend at: http://localhost:${PORT}`);
 });

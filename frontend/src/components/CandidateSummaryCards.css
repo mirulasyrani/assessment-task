@@ -1,38 +1,129 @@
-.summary-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
+/* frontend/src/components/CandidateSummaryCards.css */
+
+/* Main container for the summary cards */
+.candidate-summary-cards-container {
+    margin-bottom: 20px; /* Space below the summary section */
 }
 
-.card {
-  background: #f5f5f5;
-  padding: 12px 16px;
-  border-radius: 8px;
-  min-width: 120px;
-  text-align: center;
-  font-weight: bold;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+.summary-title {
+    font-size: 1.5em; /* Adjust as needed for your design system */
+    color: #333;
+    margin-bottom: 15px;
+    text-align: center; /* Center the title, adjust if needed */
 }
 
-.card.total {
-  background: #dfe6e9;
+/* Grid layout for the individual summary cards */
+.summary-cards-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px; /* Space between cards */
+    justify-content: center; /* Center cards horizontally if there's extra space */
 }
-.card.applied {
-  background: #74b9ff;
+
+/* Base styling for individual summary cards */
+.summary-card {
+    background: #f5f5f5;
+    padding: 12px 16px;
+    border-radius: 8px;
+    min-width: 120px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    flex-grow: 1; /* Allows cards to grow and fill space */
+    flex-basis: auto; /* Allows cards to shrink but not below min-width */
+    display: flex; /* Use flex for internal content alignment */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
-.card.screening {
-  background: #81ecec;
+
+/* Accessibility: Focus state for keyboard navigation */
+.summary-card:focus {
+    outline: 3px solid #3b82f6; /* Blue outline */
+    outline-offset: 2px;
 }
-.card.interview {
-  background: #ffeaa7;
+
+/* Interactivity: Hover effect for clickable cards */
+.summary-card:hover {
+    transform: translateY(-2px); /* Lift effect */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+    cursor: pointer; /* Indicate clickability */
 }
-.card.offer {
-  background: #fdcb6e;
+
+/* Styling for the total candidates card */
+.summary-card.total {
+    background: #dfe6e9; /* Light grey */
+    border: 2px solid #636e72; /* Darker grey border */
+    font-size: 16px; /* Slightly larger font */
 }
-.card.hired {
-  background: #55efc4;
+
+/* Override hover effects for the total card if it's not clickable */
+.summary-card.total:hover {
+    cursor: default; /* Change cursor back to default */
+    transform: none; /* Disable lift effect */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Revert shadow */
 }
-.card.rejected {
-  background: #fab1a0;
+
+/* Improve internal spacing for labels and values */
+.summary-card .card-label {
+    font-size: 0.9em; /* Make label slightly smaller */
+    color: #555; /* Mute label color */
+    margin-bottom: 4px;
+}
+
+.summary-card .card-value {
+    font-size: 1.4em; /* Make value stand out */
+    font-weight: bold;
+}
+
+
+/* Status-based background colors for cards (matching the enum) */
+.summary-card.applied {
+    background: #74b9ff; /* Light blue */
+    color: #1b262c; /* Dark text for contrast */
+}
+
+.summary-card.screening {
+    background: #81ecec; /* Cyan */
+    color: #1b262c;
+}
+
+.summary-card.interview {
+    background: #ffeaa7; /* Light yellow */
+    color: #1b262c;
+}
+
+.summary-card.offer {
+    background: #fdcb6e; /* Orange-yellow */
+    color: #1b262c;
+}
+
+.summary-card.hired {
+    background: #55efc4; /* Mint green */
+    color: #1b262c;
+}
+
+.summary-card.rejected {
+    background: #fab1a0; /* Light red/coral */
+    color: #1b262c;
+}
+
+.summary-card.withdrawn { /* Added for the new 'withdrawn' status */
+    background: #b2bec3; /* Muted grey */
+    color: #1b262c;
+}
+
+/* Responsive layout for smaller screens */
+@media (max-width: 600px) {
+    .summary-cards-grid {
+        flex-direction: column; /* Stack cards vertically */
+    }
+
+    .summary-card {
+        width: 100%; /* Make each card take full width */
+        min-width: unset; /* Remove min-width constraint */
+    }
 }

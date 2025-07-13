@@ -1,29 +1,94 @@
+/* frontend/src/components/Modal.css */
+
+/* Modal Backdrop: Covers the entire screen, centers content, and dims background */
 .modal-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4); /* Semi-transparent black overlay */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1000; /* Ensures it's above other page content */
+  animation: fadeIn 0.2s ease-in-out; /* Smooth fade-in animation */
+
+  /* Optional: subtle blur behind modal (modern effect) */
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px); /* For Safari compatibility */
 }
 
+/* Keyframe animation for backdrop fade-in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Box: The actual content container */
 .modal-box {
-  background: white;
+  background: white; /* Default background for light mode */
   padding: 2rem;
   border-radius: 8px;
-  position: relative;
+  position: relative; /* Needed for positioning the close button */
   min-width: 320px;
   max-width: 500px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  max-height: 90vh; /* Limits height to prevent modal from going off-screen */
+  overflow-y: auto; /* Adds scrollbar if content exceeds max-height */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
+  animation: slideUp 0.2s ease-out; /* Smooth slide-up animation */
+  transform: translateY(0); /* Ensure initial state for animation */
+  opacity: 1; /* Ensure initial state for animation */
 }
 
+/* Keyframe animation for modal box slide-up */
+@keyframes slideUp {
+  from {
+    transform: translateY(20px); /* Starts slightly below its final position */
+    opacity: 0; /* Starts invisible */
+  }
+  to {
+    transform: translateY(0); /* Ends at its natural position */
+    opacity: 1; /* Ends fully visible */
+  }
+}
+
+/* Modal Close Button */
 .modal-close {
   position: absolute;
   top: 8px;
   right: 12px;
-  font-size: 20px;
+  font-size: 24px; /* Slightly larger for better tap target */
   border: none;
   background: none;
+  color: #333; /* Default color for light mode */
   cursor: pointer;
+  transition: transform 0.2s ease;
+  padding: 4px; /* Add padding to increase click/tap area */
+  line-height: 1; /* Ensure tight spacing for 'x' character */
+}
+
+/* Interaction states for close button */
+.modal-close:hover {
+  transform: scale(1.2); /* Enlarge on hover */
+}
+
+.modal-close:focus {
+  transform: scale(1.2); /* Also enlarge on focus for consistency */
+  outline: 2px solid #3b82f6; /* Accessible blue outline for keyboard focus */
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+body.dark .modal-box {
+  background: #1f2937; /* Dark background for modal content */
+  color: #f9fafb; /* Light text color */
+}
+
+body.dark .modal-close {
+  color: #f3f4f6; /* Lighter color for close button in dark mode */
 }
