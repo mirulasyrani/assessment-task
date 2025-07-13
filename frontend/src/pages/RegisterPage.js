@@ -2,31 +2,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-// If your `authRegister` function (from AuthContext) handles the API call internally,
-// then you do NOT need to import `API` directly here.
-// import API from '../services/api'; 
-import { registerSchema } from '../validation/schemas';
+import { registerSchema } from '../validation/schemas'; // This now imports from shared via validation/schemas
 import { useAuth } from '../context/AuthContext';
 import styles from './AuthForm.module.css';
 import { toast } from 'react-toastify';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  // Destructure 'register' function from useAuth
-  const { user, loading: authLoading, register: authRegister } = useAuth(); 
+  const { user, loading: authLoading, register: authRegister } = useAuth();
 
   const [form, setForm] = useState({
     username: '',
     full_name: '',
     email: '',
     password: '',
+    confirmPassword: '', // <--- ADD THIS FIELD
   });
 
   const [errors, setErrors] = useState({});
   const [localLoading, setLocalLoading] = useState(false);
 
   useEffect(() => {
-    // Redirect if already authenticated and auth state is loaded
     if (!authLoading && user) {
       navigate('/dashboard');
     }
@@ -38,11 +34,28 @@ const RegisterPage = () => {
 
   const handleBlur = (field) => {
     try {
-      registerSchema.pick({ [field]: true }).parse({ [field]: form[field] });
+      // For confirmPassword, we need to parse both password and confirmPassword
+      if (field === 'confirmPassword' || field === 'password') {
+        registerSchema.pick({ password: true, confirmPassword: true }).parse({
+          password: form.password,
+          confirmPassword: form.confirmPassword,
+        });
+      } else {
+        // For other fields, validate individually
+        registerSchema.pick({ [field]: true }).parse({ [field]: form[field] });
+      }
       setErrors((prev) => ({ ...prev, [field]: '' })); // Clear error for this field
     } catch (e) {
+      const fieldPath = e?.errors?.[0]?.path?.[0] || 'unknown';
       const message = e?.errors?.[0]?.message || 'Invalid input';
-      setErrors((prev) => ({ ...prev, [field]: message }));
+
+      // Set error for the specific field that caused the blur validation issue
+      if (fieldPath === field || (fieldPath === 'confirmPassword' && (field === 'password' || field === 'confirmPassword'))) {
+          setErrors((prev) => ({ ...prev, [field]: message }));
+      } else if (fieldPath === 'password' && field === 'confirmPassword' && e?.errors?.[0]?.message === 'Passwords do not match.') {
+          // Special handling if confirmPassword blur reveals password mismatch
+          setErrors((prev) => ({ ...prev, confirmPassword: message }));
+      }
     }
   };
 
@@ -53,10 +66,15 @@ const RegisterPage = () => {
 
     try {
       // Validate form data using Zod
+      // The schema expects confirmPassword, so the form must have it
       registerSchema.parse(form);
 
       // Call the AuthContext's register function
-      await authRegister(form); 
+      // Note: AuthContext's register function should *not* receive confirmPassword.
+      // It should only send username, full_name, email, password to the backend.
+      // Assuming `authRegister` expects only { username, full_name, email, password }
+      const { confirmPassword, ...dataToSend } = form; // <--- DESTUCTURE confirmPassword OUT
+      await authRegister(dataToSend);
 
       toast.success('Registration successful! Redirecting to dashboard...');
       navigate('/dashboard');
@@ -95,7 +113,7 @@ const RegisterPage = () => {
 
   return (
     <Layout>
-      <div className={styles.authContainer}> {/* Assuming you have an .authContainer in AuthForm.module.css */}
+      <div className={styles.authContainer}>
         <h2>Register</h2>
         <form onSubmit={handleSubmit} noValidate className={styles.form}>
           {/* Username */}
@@ -105,7 +123,7 @@ const RegisterPage = () => {
           <input
             id="username"
             name="username"
-            type="text" // Explicitly define type for better browser behavior
+            type="text"
             placeholder="Choose a username"
             value={form.username}
             onChange={handleChange}
@@ -113,11 +131,11 @@ const RegisterPage = () => {
             autoComplete="username"
             aria-describedby={errors.username ? "username-error" : undefined}
             aria-invalid={!!errors.username}
-            required // Indicate this field is required
-            className={styles.input} {/* Apply input styling */}
+            required
+            className={styles.input}
           />
           {errors.username && (
-            <small id="username-error" role="alert" className={styles.error}> {/* Apply error styling */}
+            <small id="username-error" role="alert" className={styles.error}>
               {errors.username}
             </small>
           )}
@@ -190,6 +208,30 @@ const RegisterPage = () => {
           {errors.password && (
             <small id="password-error" role="alert" className={styles.error}>
               {errors.password}
+            </small>
+          )}
+
+          {/* Confirm Password - ADD THIS INPUT FIELD */}
+          <label htmlFor="confirmPassword" className={styles.label}>
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            name="confirmPassword"
+            placeholder="********"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            onBlur={() => handleBlur('confirmPassword')} // Validate on blur
+            autoComplete="new-password"
+            aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
+            aria-invalid={!!errors.confirmPassword}
+            required
+            className={styles.input}
+          />
+          {errors.confirmPassword && (
+            <small id="confirmPassword-error" role="alert" className={styles.error}>
+              {errors.confirmPassword}
             </small>
           )}
 
