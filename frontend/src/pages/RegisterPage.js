@@ -1,8 +1,7 @@
-// src/pages/RegisterPage.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { registerSchema } from '../validation/schemas'; // This now imports from shared via validation/schemas
+import { registerSchema } from '../validation/schemas';
 import { useAuth } from '../context/AuthContext';
 import styles from './AuthForm.module.css';
 import { toast } from 'react-toastify';
@@ -16,11 +15,13 @@ const RegisterPage = () => {
     full_name: '',
     email: '',
     password: '',
-    confirmPassword: '', // <--- ADD THIS FIELD
+    confirmPassword: '',
   });
 
   const [errors, setErrors] = useState({});
   const [localLoading, setLocalLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -34,27 +35,20 @@ const RegisterPage = () => {
 
   const handleBlur = (field) => {
     try {
-      // For confirmPassword, we need to parse both password and confirmPassword
       if (field === 'confirmPassword' || field === 'password') {
         registerSchema.pick({ password: true, confirmPassword: true }).parse({
           password: form.password,
           confirmPassword: form.confirmPassword,
         });
       } else {
-        // For other fields, validate individually
         registerSchema.pick({ [field]: true }).parse({ [field]: form[field] });
       }
-      setErrors((prev) => ({ ...prev, [field]: '' })); // Clear error for this field
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     } catch (e) {
       const fieldPath = e?.errors?.[0]?.path?.[0] || 'unknown';
       const message = e?.errors?.[0]?.message || 'Invalid input';
-
-      // Set error for the specific field that caused the blur validation issue
       if (fieldPath === field || (fieldPath === 'confirmPassword' && (field === 'password' || field === 'confirmPassword'))) {
-          setErrors((prev) => ({ ...prev, [field]: message }));
-      } else if (fieldPath === 'password' && field === 'confirmPassword' && e?.errors?.[0]?.message === 'Passwords do not match.') {
-          // Special handling if confirmPassword blur reveals password mismatch
-          setErrors((prev) => ({ ...prev, confirmPassword: message }));
+        setErrors((prev) => ({ ...prev, [field]: message }));
       }
     }
   };
@@ -62,18 +56,11 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalLoading(true);
-    setErrors({}); // Clear previous errors
+    setErrors({});
 
     try {
-      // Validate form data using Zod
-      // The schema expects confirmPassword, so the form must have it
       registerSchema.parse(form);
-
-      // Call the AuthContext's register function
-      // Note: AuthContext's register function should *not* receive confirmPassword.
-      // It should only send username, full_name, email, password to the backend.
-      // Assuming `authRegister` expects only { username, full_name, email, password }
-      await authRegister(form);
+      await authRegister(form); // Send only needed fields inside the hook
 
       toast.success('Registration successful! Redirecting to dashboard...');
       navigate('/dashboard');
@@ -85,17 +72,15 @@ const RegisterPage = () => {
           fieldErrors[e?.path?.[0] || 'unknown'] = message;
         });
         setErrors(fieldErrors);
-
         toast.error(
           `Please fix the following:\n${err.errors.map((e) => `• ${e.message}`).join('\n')}`,
           { autoClose: false, style: { whiteSpace: 'pre-line' } }
         );
       } else if (err.response) {
-        // Handle specific backend errors, e.g., if username/email already exists
-        if (err.response.status === 409) { // Assuming 409 Conflict for existing user
-            toast.error(err.response.data.message || 'User with this email/username already exists.');
+        if (err.response.status === 409) {
+          toast.error(err.response.data.message || 'User with this email/username already exists.');
         } else {
-            toast.error(err.response.data.message || 'Registration failed. Please try again.');
+          toast.error(err.response.data.message || 'Registration failed. Please try again.');
         }
       } else {
         toast.error('Registration failed. Please check your network connection.');
@@ -105,7 +90,6 @@ const RegisterPage = () => {
     }
   };
 
-  // If AuthContext is still loading initial auth state, show a loading indicator
   if (authLoading) {
     return <Layout><p>Loading authentication state...</p></Layout>;
   }
@@ -116,9 +100,7 @@ const RegisterPage = () => {
         <h2>Register</h2>
         <form onSubmit={handleSubmit} noValidate className={styles.form}>
           {/* Username */}
-          <label htmlFor="username" className={styles.label}>
-            Username
-          </label>
+          <label htmlFor="username" className={styles.label}>Username</label>
           <input
             id="username"
             name="username"
@@ -140,9 +122,7 @@ const RegisterPage = () => {
           )}
 
           {/* Full Name */}
-          <label htmlFor="full_name" className={styles.label}>
-            Full Name (optional)
-          </label>
+          <label htmlFor="full_name" className={styles.label}>Full Name (optional)</label>
           <input
             id="full_name"
             name="full_name"
@@ -163,9 +143,7 @@ const RegisterPage = () => {
           )}
 
           {/* Email */}
-          <label htmlFor="email" className={styles.label}>
-            Email
-          </label>
+          <label htmlFor="email" className={styles.label}>Email</label>
           <input
             id="email"
             type="email"
@@ -187,47 +165,63 @@ const RegisterPage = () => {
           )}
 
           {/* Password */}
-          <label htmlFor="password" className={styles.label}>
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            name="password"
-            placeholder="********"
-            value={form.password}
-            onChange={handleChange}
-            onBlur={() => handleBlur('password')}
-            autoComplete="new-password"
-            aria-describedby={errors.password ? "password-error" : undefined}
-            aria-invalid={!!errors.password}
-            required
-            className={styles.input}
-          />
+          <label htmlFor="password" className={styles.label}>Password</label>
+          <div className={styles.passwordField}>
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="********"
+              value={form.password}
+              onChange={handleChange}
+              onBlur={() => handleBlur('password')}
+              autoComplete="new-password"
+              aria-describedby={errors.password ? "password-error" : undefined}
+              aria-invalid={!!errors.password}
+              required
+              className={styles.input}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className={styles.togglePasswordBtn}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
           {errors.password && (
             <small id="password-error" role="alert" className={styles.error}>
               {errors.password}
             </small>
           )}
 
-          {/* Confirm Password - ADD THIS INPUT FIELD */}
-          <label htmlFor="confirmPassword" className={styles.label}>
-            Confirm Password
-          </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            name="confirmPassword"
-            placeholder="********"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            onBlur={() => handleBlur('confirmPassword')} // Validate on blur
-            autoComplete="new-password"
-            aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
-            aria-invalid={!!errors.confirmPassword}
-            required
-            className={styles.input}
-          />
+          {/* Confirm Password */}
+          <label htmlFor="confirmPassword" className={styles.label}>Confirm Password</label>
+          <div className={styles.passwordField}>
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              name="confirmPassword"
+              placeholder="********"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              onBlur={() => handleBlur('confirmPassword')}
+              autoComplete="new-password"
+              aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
+              aria-invalid={!!errors.confirmPassword}
+              required
+              className={styles.input}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((prev) => !prev)}
+              className={styles.togglePasswordBtn}
+              aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+            >
+              {showConfirmPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
           {errors.confirmPassword && (
             <small id="confirmPassword-error" role="alert" className={styles.error}>
               {errors.confirmPassword}

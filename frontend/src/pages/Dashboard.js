@@ -48,17 +48,20 @@ const Dashboard = () => {
         sortBy,
       };
 
-      const res = await API.get('/candidates', { params });
-      console.log('📥 /candidates response:', res.data);
+     const res = await API.get('/candidates', { params });
+     console.log('📥 /candidates response:', res.data);
 
-      if (Array.isArray(res.data)) {
-        setCandidates(res.data);
-      } else if (Array.isArray(res.data.data)) {
-        setCandidates(res.data.data);
-      } else {
-        console.warn('⚠️ Unexpected /candidates response format:', res.data);
-        setCandidates([]);
+     if (Array.isArray(res.data)) {
+       setCandidates(res.data);
+     } else if (Array.isArray(res.data.data)) {
+       setCandidates(res.data.data);
+     } else if (Array.isArray(res.data.candidates)) {
+       setCandidates(res.data.candidates);
+     } else {
+       console.warn('⚠️ Unexpected /candidates response format:', res.data);
+       setCandidates([]);
       }
+
     } catch (err) {
       console.error('Error fetching candidates:', err);
       logFrontendErrorToBackend(err, 'fetch_candidates_failure');

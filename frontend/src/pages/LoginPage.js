@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import API from '../services/api';
 import { loginSchema } from '../validation/schemas';
-// import { isAuthenticated, fetchUser } from '../utils/auth'; // Potentially remove these direct imports
-import { useAuth } from '../context/AuthContext'; // Import useAuth hook
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import styles from './AuthForm.module.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, login: authLogin } = useAuth(); // Use useAuth hook for global state
-  
+  const { user, loading: authLoading, login: authLogin } = useAuth();
+
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
-  const [localLoading, setLocalLoading] = useState(false); // Use local loading for form submission
+  const [localLoading, setLocalLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // ✅ Password visibility toggle
 
-  // Redirect if already authenticated and auth state is loaded
   useEffect(() => {
     if (!authLoading && user) {
       navigate('/dashboard');
@@ -30,7 +28,7 @@ const LoginPage = () => {
   const handleBlur = (field) => {
     try {
       loginSchema.pick({ [field]: true }).parse({ [field]: form[field] });
-      setErrors((prev) => ({ ...prev, [field]: '' })); // Clear error for this field
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     } catch (err) {
       const message = err?.errors?.[0]?.message || 'Invalid input';
       setErrors((prev) => ({ ...prev, [field]: message }));
@@ -39,16 +37,12 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLocalLoading(true); // Start local form loading
-    setErrors({}); // Clear previous errors
+    setLocalLoading(true);
+    setErrors({});
 
     try {
-      // Validate form data using Zod
       loginSchema.parse(form);
-
-      // Call the login function from AuthContext
-      await authLogin(form); 
-
+      await authLogin(form);
       toast.success('Login successful!');
       navigate('/dashboard');
     } catch (err) {
@@ -64,26 +58,26 @@ const LoginPage = () => {
           { autoClose: false, style: { whiteSpace: 'pre-line' } }
         );
       } else if (err.response) {
-        // Specific error messages from backend, e.g., 401 Unauthorized
         toast.error(err.response.data.message || 'Login failed. Please check your credentials.');
       } else {
-        // Network errors or other unexpected issues
         toast.error('Login failed. Please check your network connection.');
       }
     } finally {
-      setLocalLoading(false); // End local form loading
+      setLocalLoading(false);
     }
   };
 
-  // If AuthContext is still loading initial auth state, show a loading indicator
   if (authLoading) {
-    // You might want a full-page loader here or simply return null
-    return <Layout><p>Loading authentication state...</p></Layout>; 
+    return (
+      <Layout>
+        <p>Loading authentication state...</p>
+      </Layout>
+    );
   }
 
   return (
     <Layout>
-      <div className={styles.authContainer}> {/* Optional: Add a container for centering/styling */}
+      <div className={styles.authContainer}>
         <h2>Login</h2>
         <form onSubmit={handleSubmit} noValidate className={styles.form}>
           <label htmlFor="email" className={styles.label}>
@@ -97,7 +91,9 @@ const LoginPage = () => {
             value={form.email}
             onChange={handleChange}
             onBlur={() => handleBlur('email')}
-            aria-describedby={errors.email ? "email-error" : undefined}
+            autoFocus
+            autoComplete="email"
+            aria-describedby={errors.email ? 'email-error' : undefined}
             aria-invalid={!!errors.email}
             required
             className={styles.input}
@@ -111,19 +107,30 @@ const LoginPage = () => {
           <label htmlFor="password" className={styles.label}>
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            name="password"
-            placeholder="********"
-            value={form.password}
-            onChange={handleChange}
-            onBlur={() => handleBlur('password')}
-            aria-describedby={errors.password ? "password-error" : undefined}
-            aria-invalid={!!errors.password}
-            required
-            className={styles.input}
-          />
+          <div className={styles.passwordField}>
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="********"
+              value={form.password}
+              onChange={handleChange}
+              onBlur={() => handleBlur('password')}
+              autoComplete="current-password"
+              aria-describedby={errors.password ? 'password-error' : undefined}
+              aria-invalid={!!errors.password}
+              required
+              className={styles.input}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className={styles.togglePasswordBtn}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
           {errors.password && (
             <small id="password-error" className={styles.error}>
               {errors.password}
@@ -132,7 +139,7 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            disabled={localLoading} // Use localLoading here
+            disabled={localLoading}
             aria-busy={localLoading}
             className={styles.button}
           >
