@@ -1,5 +1,4 @@
-// frontend/src/shared/schemas/authSchema.js
-import { z } from 'zod';
+const { z } = require('zod');
 
 /**
  * Regex for strong passwords:

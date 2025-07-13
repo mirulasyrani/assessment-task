@@ -1,5 +1,4 @@
-// frontend/src/shared/schemas/candidateSchema.js
-import { z } from 'zod';
+const { z } = require('zod');
 
 /**
  * Regex for Malaysian mobile phone numbers.

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+const { z } = require('zod');
 
 const malaysianPhoneRegex = /^(\+?60|0)?1[0-46-9]-?[0-9]{7,8}$/;
 

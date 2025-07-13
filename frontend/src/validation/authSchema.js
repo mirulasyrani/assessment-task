@@ -1,4 +1,4 @@
-import { z } from 'zod';
+const { z } = require('zod');
 
 // Reuse the password regex
 const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d^$*+.!@#$%&]{8,32}$/;
