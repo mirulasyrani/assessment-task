@@ -73,8 +73,7 @@ const RegisterPage = () => {
       // Note: AuthContext's register function should *not* receive confirmPassword.
       // It should only send username, full_name, email, password to the backend.
       // Assuming `authRegister` expects only { username, full_name, email, password }
-      const { confirmPassword, ...dataToSend } = form; // <--- DESTUCTURE confirmPassword OUT
-      await authRegister(dataToSend);
+      await authRegister(form);
 
       toast.success('Registration successful! Redirecting to dashboard...');
       navigate('/dashboard');
