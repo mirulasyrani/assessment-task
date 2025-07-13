@@ -1,26 +1,20 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// A placeholder logout function set by AuthContext
-let authContextLogoutFunction = () => {
-  // No-op by default
-};
+let authContextLogoutFunction = () => {};
 
-// Inject logout from AuthContext
 export const setAuthContextLogout = (logoutFn) => {
   authContextLogoutFunction = logoutFn;
 };
 
-// Create API instance
 const API = axios.create({
   baseURL: 'https://assessment-task-1.onrender.com/api',
+  withCredentials: true, // ✅ Always send cookies
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // ✅ Required to send cookies
 });
 
-// ✅ Response interceptor to handle errors like 401
 API.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -29,7 +23,7 @@ API.interceptors.response.use(
 
       if (status === 401) {
         toast.error('Session expired. Logging out...');
-        authContextLogoutFunction(); // Logout from context
+        authContextLogoutFunction();
         setTimeout(() => {
           window.location.href = '/login';
         }, 1500);
