@@ -19,16 +19,17 @@ const allowedOrigins = [
 // ✅ CORS setup
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // Allow mobile/curl/etc.
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
-    },
+    origin: [
+      'https://assessment-task-five.vercel.app',
+      'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
+      'http://localhost:3000',
+    ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
 
 // ✅ Middleware
 app.use(cookieParser()); // Must come before route handlers
