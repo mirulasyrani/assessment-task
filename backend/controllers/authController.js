@@ -3,10 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const CustomError = require('../utils/customError');
 
-// Note: Zod schema validation will be handled by a middleware (e.g., validate.js)
-// before these controller functions are executed.
-// const { registerSchema, loginSchema } = require('../../shared/schemas/authSchema');
-
 /**
  * @desc Register a new recruiter
  * @route POST /api/auth/register
@@ -131,7 +127,8 @@ const getMe = async (req, res, next) => {
             return next(new CustomError('User not found.', 404));
         }
 
-        res.status(200).json(recruiter.rows[0]);
+        // ✅ Wrap in user object to match frontend expectations
+        res.status(200).json({ user: recruiter.rows[0] });
     } catch (err) {
         next(err); // Pass error to global error handler
     }
