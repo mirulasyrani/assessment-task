@@ -8,18 +8,19 @@ export const setAuthContextLogout = (fn) => {
 
 let isLoggingOut = false;
 
+// ✅ Ensure the base URL is clean and accurate
 const BACKEND_BASE_URL =
   process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'https://assessment-task-1.onrender.com';
 
 const API = axios.create({
   baseURL: `${BACKEND_BASE_URL}/api`,
-  withCredentials: true, // ✅ Include cookies
+  withCredentials: true, // ✅ Include cookies for cross-origin auth
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// 🔧 Helper to log frontend errors
+// 🔧 Log frontend errors (network failures, etc.)
 const logFrontendError = async ({
   context = 'Unknown context',
   message = 'No message provided',
@@ -32,9 +33,11 @@ const logFrontendError = async ({
   try {
     await fetch(`${BACKEND_BASE_URL}/api/logs/frontend-error`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // ✅ Include cookies
-      mode: 'cors',            // ✅ Send Origin header
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // ✅ Send cookies
+      mode: 'cors',            // ✅ Cross-origin safe
       body: JSON.stringify({
         context,
         message,
@@ -51,11 +54,13 @@ const logFrontendError = async ({
   }
 };
 
+// ✅ Log outgoing API requests
 API.interceptors.request.use((config) => {
   console.log(`➡️ API Request: ${config.method?.toUpperCase()} ${config.url}`);
   return config;
 });
 
+// ✅ Handle API errors globally
 API.interceptors.response.use(
   (response) => response,
   async (error) => {

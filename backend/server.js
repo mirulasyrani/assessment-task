@@ -10,33 +10,32 @@ const candidateRoutes = require('./routes/candidates'); // Optional
 const app = express();
 app.set('trust proxy', 1); // Required for secure cookies on Render/Vercel
 
-// ✅ Get allowed frontend origins (env + fallbacks)
-const clientUrl = process.env.CLIENT_URL?.replace(/\/$/, ''); // strip trailing slash
+// ✅ Define allowed frontend URLs
 const allowedOrigins = [
-  clientUrl,
+  process.env.CLIENT_URL?.replace(/\/$/, ''), // from .env
+  'https://assessment-task-five.vercel.app', // your deployed frontend
   'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
   'http://localhost:3000',
 ].filter(Boolean);
 
 console.log('✅ Allowed CORS origins:', allowedOrigins);
 
-// ✅ CORS middleware config
+// ✅ CORS middleware
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('🌐 CORS origin attempt:', origin);
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`⛔ Blocked by CORS: ${origin}`);
-      callback(new Error(`Not allowed by CORS: ${origin}`));
+      return callback(null, true);
     }
+    console.warn(`⛔ Blocked by CORS: ${origin}`);
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
 };
 
-// ✅ Apply CORS to all routes
+// ✅ Apply CORS globally
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // preflight requests
+app.options('*', cors(corsOptions));
 
 // ✅ Middlewares
 app.use(express.json());
@@ -49,7 +48,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ CORS test route (optional)
+// ✅ Healthcheck or CORS test route
 app.get('/api/test-cors', (req, res) => {
   res.json({ message: 'CORS is working properly!' });
 });
@@ -58,7 +57,7 @@ app.get('/api/test-cors', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/candidates', candidateRoutes);
 
-// ✅ Frontend error logger route
+// ✅ Frontend error logger
 app.post('/api/logs/frontend-error', (req, res) => {
   const {
     context,
@@ -96,13 +95,13 @@ app.use((req, res) => {
   res.status(404).json({ message: `API endpoint not found: ${req.method} ${req.originalUrl}` });
 });
 
-// ✅ Error handler
+// ✅ Global error handler
 app.use((err, req, res, next) => {
-  console.error(`❌ Error on ${req.method} ${req.originalUrl}:`, err);
+  console.error(`❌ Error on ${req.method} ${req.originalUrl}:`, err.message);
   errorHandler(err, req, res, next);
 });
 
-// ✅ Server start
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
