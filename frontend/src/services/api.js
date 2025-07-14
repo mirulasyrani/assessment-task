@@ -10,7 +10,7 @@ let isLoggingOut = false;
 
 // ✅ Ensure the base URL is clean and accurate
 const BACKEND_BASE_URL =
-  process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'https://assessment-task-1.onrender.com';
+  process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'https://assessment-task-ty98.onrender.com';
 
 const API = axios.create({
   baseURL: `${BACKEND_BASE_URL}/api`,
