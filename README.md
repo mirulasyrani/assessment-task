@@ -60,7 +60,7 @@ Password: Testing123
    npm start
    ```
 
-> The frontend will run on [Vercel](https://assessment-task-five.vercel.app/) and the backend on [Render](https://assessment-task-1.onrender.com/).
+> The frontend will run on [Vercel](https://assessment-task-five.vercel.app/) and the backend on [Render](https://assessment-task-ty98.onrender).com/.com/).
 
 ## 📄 API Endpoints
 

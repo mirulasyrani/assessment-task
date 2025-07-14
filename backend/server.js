@@ -8,22 +8,22 @@ const authRoutes = require('./routes/auth');
 const candidateRoutes = require('./routes/candidates'); // Optional
 
 const app = express();
-app.set('trust proxy', 1); // ✅ Secure cookies behind proxy
+app.set('trust proxy', 1); // Required for secure cookies on Render/Vercel
 
-// ✅ Dynamically get allowed origins from env + hardcoded ones
-const clientUrl = process.env.CLIENT_URL ? process.env.CLIENT_URL.replace(/\/$/, '') : null;
+// ✅ Get allowed frontend origins (env + fallbacks)
+const clientUrl = process.env.CLIENT_URL?.replace(/\/$/, ''); // strip trailing slash
 const allowedOrigins = [
   clientUrl,
   'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
   'http://localhost:3000',
-].filter(Boolean); // remove any null or undefined
+].filter(Boolean);
 
 console.log('✅ Allowed CORS origins:', allowedOrigins);
 
-// ✅ CORS config with credentials and dynamic origin + logging
+// ✅ CORS middleware config
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('CORS origin:', origin);
+    console.log('🌐 CORS origin attempt:', origin);
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -34,33 +34,31 @@ const corsOptions = {
   credentials: true,
 };
 
-// ✅ Apply CORS middleware for all requests
+// ✅ Apply CORS to all routes
 app.use(cors(corsOptions));
-
-// ✅ Preflight requests handled with same CORS config
-app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions)); // preflight requests
 
 // ✅ Middlewares
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Request logging for debugging
+// ✅ Logger
 app.use((req, res, next) => {
   console.log(`➡️ ${req.method} ${req.originalUrl} from IP: ${req.ip}`);
   console.log('🍪 Cookies:', req.cookies || {});
   next();
 });
 
-// ✅ Test CORS route for quick debugging (optional)
-app.get('/api/test-cors', cors(corsOptions), (req, res) => {
-  res.json({ message: 'CORS works!' });
+// ✅ CORS test route (optional)
+app.get('/api/test-cors', (req, res) => {
+  res.json({ message: 'CORS is working properly!' });
 });
 
-// ✅ API routes
+// ✅ Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/candidates', candidateRoutes);
 
-// ✅ Frontend error logging endpoint
+// ✅ Frontend error logger route
 app.post('/api/logs/frontend-error', (req, res) => {
   const {
     context,
@@ -98,13 +96,13 @@ app.use((req, res) => {
   res.status(404).json({ message: `API endpoint not found: ${req.method} ${req.originalUrl}` });
 });
 
-// ✅ Global error handler middleware
+// ✅ Error handler
 app.use((err, req, res, next) => {
   console.error(`❌ Error on ${req.method} ${req.originalUrl}:`, err);
   errorHandler(err, req, res, next);
 });
 
-// ✅ Start server
+// ✅ Server start
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
