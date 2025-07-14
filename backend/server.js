@@ -14,27 +14,26 @@ app.set('trust proxy', 1); // For secure cookies behind proxy (Render/Vercel)
 const allowedOrigins = [
   'https://assessment-task-five.vercel.app',
   'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
-  'http://localhost:3000'
+  'http://localhost:3000',
 ];
 
-  const corsOptions = {
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // Allow curl/postman
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS: ' + origin));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 200
-  };
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Allow curl/Postman
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS: ' + origin));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // ✅ COMMA was missing here
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200,
+};
 
-  app.use(cors(corsOptions));
-  app.options('*', cors(corsOptions)); // Preflight for complex requests
-
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Preflight
 
 app.use(express.json());
 app.use(cookieParser());
