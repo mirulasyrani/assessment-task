@@ -4,7 +4,7 @@ import CandidateForm from './CandidateForm';
 import './badges.css';
 import './CandidateSummaryCards.css';
 import { toast } from 'react-toastify';
-import { useAuth } from '../hooks/useAuth'; // ✅ Use hook instead of custom call
+import { useAuth } from '../context/AuthContext';
 
 const STATUS_OPTIONS = [
   'applied',
