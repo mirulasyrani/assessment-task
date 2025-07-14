@@ -17,8 +17,8 @@ A responsive, full-stack candidate tracking dashboard that allows you to manage 
 Use the following credentials to log in to the test environment:
 
 ```
-Email: Test@123test.com  
-Password: Testing123
+Email: admin@example.com  
+Password: password123
 ```
 
 > Make sure to log in through the correct login route (check your deployed frontend login page).
