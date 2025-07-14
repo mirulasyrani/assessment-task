@@ -10,21 +10,14 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await API.get('/auth/me');
-      console.log('✅ /auth/me response:', response.data);
-
-      if (response.data?.user) {
-        setUser(response.data.user);
+      const res = await API.get('/auth/me');
+      if (res.data?.user) {
+        setUser(res.data.user);
       } else {
-        console.warn('⚠️ /auth/me did not return a valid user object:', response.data);
         setUser(null);
       }
-    } catch (error) {
-      if (error.response?.status !== 401) {
-        console.error('❌ Unexpected error fetching user:', error);
-      } else {
-        console.log('ℹ️ Not authenticated, skipping user set.');
-      }
+    } catch (err) {
+      if (err.response?.status !== 401) console.error('Unexpected /auth/me error', err);
       setUser(null);
     } finally {
       setLoading(false);
@@ -35,25 +28,23 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await API.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch (err) {
+      console.error('Logout failed:', err);
     } finally {
       setUser(null);
     }
   };
 
-  const login = async (credentials) => {
+  const login = async (creds) => {
     setLoading(true);
     try {
-      const response = await API.post('/auth/login', credentials);
-      if (response.data?.user) {
-        setUser(response.data.user);
-        return response.data.user;
+      const res = await API.post('/auth/login', creds);
+      if (res.data?.user) {
+        setUser(res.data.user);
+        return res.data.user;
       } else {
-        throw new Error('Invalid login response format');
+        throw new Error('Bad login response');
       }
-    } catch (error) {
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -62,21 +53,17 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setLoading(true);
     try {
-      const response = await API.post('/auth/register', userData);
-      if (response.data?.user) {
-        setUser(response.data.user);
-        return response.data.user;
+      const res = await API.post('/auth/register', userData);
+      if (res.data?.user) {
+        setUser(res.data.user);
+        return res.data.user;
       } else {
-        throw new Error('Invalid register response format');
+        throw new Error('Bad register response');
       }
-    } catch (error) {
-      throw error;
     } finally {
       setLoading(false);
     }
   };
-
-  const isAuthenticated = () => !!user;
 
   useEffect(() => {
     setAuthContextLogout(logout);
@@ -84,17 +71,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthenticated,
-        login,
-        register,
-        logout,
-      }}
-    >
-      {initialCheckDone ? children : <p style={{ padding: '2rem' }}>Checking authentication...</p>}
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {initialCheckDone ? children : <p>Checking authentication...</p>}
     </AuthContext.Provider>
   );
 };
