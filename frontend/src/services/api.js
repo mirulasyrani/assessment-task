@@ -10,7 +10,7 @@ export const setAuthContextLogout = (fn) => {
 let isLoggingOut = false; // prevent multiple redirects
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_BACKEND_URL || 'https://assessment-task-1.onrender.com/api',
+  baseURL: (process.env.REACT_APP_API_URL ?? 'https://assessment-task-1.onrender.com') + '/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -33,13 +33,11 @@ API.interceptors.response.use(
         window.location.href = '/login';
       }, 1200);
     } else if (status && status !== 404) {
-      // Toast for other errors
       const msg = error.response?.data?.message || 'Something went wrong';
       toast.error(msg);
 
-      // Optional: Log frontend error to backend
       try {
-        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/logs/frontend-error`, {
+        await fetch(`${process.env.REACT_APP_API_URL}/api/logs/frontend-error`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
