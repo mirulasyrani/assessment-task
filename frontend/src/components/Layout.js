@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Layout.css';
@@ -7,19 +7,20 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const { user, loading: authLoading, logout } = useAuth();
 
-  // 🌙 Toggle and persist dark mode
-  const handleToggleDark = useCallback(() => {
-    const isDark = document.body.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  }, []);
-
   // 🌅 Restore theme on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    document.body.classList.toggle('dark', savedTheme === 'dark');
+    const prefersDark = savedTheme === 'dark';
+    document.body.classList.toggle('dark', prefersDark);
   }, []);
 
-  // 🚪 Logout with error fallback
+  // 🌙 Toggle and persist dark mode
+  const handleToggleDark = () => {
+    const isDark = document.body.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  };
+
+  // 🚪 Logout and navigate
   const handleLogout = async () => {
     try {
       await logout();
@@ -56,7 +57,7 @@ const Layout = ({ children }) => {
             <span className="nav-loading">Loading...</span>
           )}
 
-          {/* 🌗 Theme toggle is shown regardless of auth state */}
+          <span className="nav-divider" />
           <button
             className="nav-btn theme-toggle-btn"
             onClick={handleToggleDark}

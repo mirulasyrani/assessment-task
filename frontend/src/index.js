@@ -6,18 +6,30 @@ import reportWebVitals from './reportWebVitals';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ErrorBoundary from './components/ErrorBoundary';
-import { AuthProvider } from './context/AuthContext'; // <-- import here
+import { AuthProvider } from './context/AuthContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <AuthProvider>    {/* Wrap AuthProvider here */}
+      <AuthProvider>
         <App />
-        <ToastContainer position="top-center" autoClose={3000} />
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
       </AuthProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );
 
-reportWebVitals();
+// Optional: Log performance metrics
+reportWebVitals(console.log);

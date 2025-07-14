@@ -6,16 +6,9 @@ import './CandidateSummaryCards.css';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 
-const STATUS_OPTIONS = [
-  'applied',
-  'screening',
-  'interview',
-  'offer',
-  'hired',
-  'rejected',
-];
+const STATUS_OPTIONS = ['applied', 'screening', 'interview', 'offer', 'hired', 'rejected'];
 
-// ✅ Optional helper to avoid repeating
+// ✅ Centralized error logger
 const logFrontendError = (context, err) => {
   API.post('/logs/frontend-error', {
     context,
@@ -23,11 +16,12 @@ const logFrontendError = (context, err) => {
     stack: err?.stack,
     url: window.location.href,
     timestamp: new Date().toISOString(),
-  });
+  }).catch(console.error);
 };
 
 const CandidateList = () => {
   const { user, loading: authLoading } = useAuth();
+
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -35,41 +29,43 @@ const CandidateList = () => {
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
+  // ✅ Fetch candidates (search, filter, or all)
   const fetchCandidates = useCallback(async () => {
     try {
       setLoading(true);
       let url = '/candidates';
+
       if (query) {
         url = `/candidates/search?q=${encodeURIComponent(query)}`;
       } else if (statusFilter) {
         url = `/candidates/filter?status=${statusFilter}`;
       }
+
       const res = await API.get(url);
       setFiltered(res.data);
     } catch (err) {
       console.error('❌ Failed to fetch candidates:', err);
-      toast.error('Failed to load candidates');
-      logFrontendError('CandidateList Fetch Candidates', err);
+      toast.error('Failed to load candidates.');
+      logFrontendError('CandidateList Fetch', err);
     } finally {
       setLoading(false);
     }
   }, [query, statusFilter]);
 
   useEffect(() => {
-    if (user) {
-      fetchCandidates();
-    }
-  }, [fetchCandidates, user]);
+    if (user) fetchCandidates();
+  }, [user, fetchCandidates]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this candidate?')) return;
+
     try {
       await API.delete(`/candidates/${id}`);
       toast.success('Candidate deleted');
       fetchCandidates();
     } catch (err) {
-      console.error('❌ Delete failed:', err);
-      toast.error('Failed to delete candidate');
+      console.error('❌ Failed to delete candidate:', err);
+      toast.error('Delete failed');
       logFrontendError('CandidateList Delete', err);
     }
   };
@@ -84,17 +80,12 @@ const CandidateList = () => {
     setShowForm(false);
   };
 
-  const handleSearchChange = (e) => setQuery(e.target.value);
-  const handleStatusChange = (e) => setStatusFilter(e.target.value);
-
-  if (authLoading) {
-    return <p>Checking authentication...</p>;
-  }
+  if (authLoading) return <p>Checking authentication...</p>;
 
   return (
     <div className="candidate-list">
       {!user ? (
-        <p style={{ color: 'red' }}>⚠️ You must be logged in to view or manage candidates.</p>
+        <p style={{ color: 'red' }}>⚠️ You must be logged in to manage candidates.</p>
       ) : (
         <>
           {/* ➕ Add Candidate */}
@@ -105,6 +96,8 @@ const CandidateList = () => {
                 setShowForm(true);
               }}
               disabled={loading}
+              className="btn btn-primary"
+              aria-label="Add new candidate"
             >
               ➕ Add Candidate
             </button>
@@ -116,11 +109,17 @@ const CandidateList = () => {
               type="text"
               placeholder="Search by name, position, or skills..."
               value={query}
-              onChange={handleSearchChange}
+              onChange={(e) => setQuery(e.target.value)}
               style={{ marginRight: '10px' }}
               disabled={loading}
+              aria-label="Search candidates"
             />
-            <select value={statusFilter} onChange={handleStatusChange} disabled={loading}>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              disabled={loading}
+              aria-label="Filter by status"
+            >
               <option value="">All Statuses</option>
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
@@ -130,7 +129,7 @@ const CandidateList = () => {
             </select>
           </div>
 
-          {/* 📄 Candidate List */}
+          {/* 📄 Candidate Cards */}
           {loading ? (
             <p>Loading candidates...</p>
           ) : filtered.length === 0 ? (
@@ -144,21 +143,25 @@ const CandidateList = () => {
                 <p><strong>Email:</strong> {c.email}</p>
                 <p>
                   <strong>Status:</strong>{' '}
-                  <span className={`status-badge status-${c.status}`}>{c.status}</span>
+                  <span className={`status-badge status-${c.status}`}>
+                    {c.status}
+                  </span>
                 </p>
                 <div className="actions" style={{ marginTop: '10px' }}>
                   <button
                     onClick={() => handleEdit(c)}
-                    aria-label={`Edit candidate ${c.name}`}
                     disabled={loading}
+                    className="btn btn-secondary"
+                    aria-label={`Edit ${c.name}`}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(c.id)}
-                    aria-label={`Delete candidate ${c.name}`}
-                    style={{ marginLeft: '8px' }}
                     disabled={loading}
+                    className="btn btn-danger"
+                    style={{ marginLeft: '8px' }}
+                    aria-label={`Delete ${c.name}`}
                   >
                     Delete
                   </button>
@@ -167,7 +170,7 @@ const CandidateList = () => {
             ))
           )}
 
-          {/* 🧾 Modal Form */}
+          {/* 🧾 Candidate Form Modal */}
           {showForm && (
             <div className="modal">
               <CandidateForm

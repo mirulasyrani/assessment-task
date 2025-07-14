@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
-// import './HomePage.css'; // Uncomment if custom styling is needed
+// import './HomePage.css';
 
 const HomePage = () => {
   return (
@@ -14,22 +14,21 @@ const HomePage = () => {
         </p>
 
         <div className="homepage-buttons-group">
-          <Link to="/login">
-            <button
-              className="nav-btn"
-              aria-label="Navigate to login page"
-            >
-              Login
-            </button>
+          <Link
+            to="/login"
+            className="nav-btn"
+            role="button"
+            aria-label="Navigate to login page"
+          >
+            Login
           </Link>
-
-          <Link to="/register">
-            <button
-              className="nav-btn"
-              aria-label="Navigate to registration page"
-            >
-              Register
-            </button>
+          <Link
+            to="/register"
+            className="nav-btn"
+            role="button"
+            aria-label="Navigate to registration page"
+          >
+            Register
           </Link>
         </div>
       </main>

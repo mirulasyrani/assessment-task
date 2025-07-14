@@ -43,13 +43,13 @@ const malaysianPhoneField = z
   .max(15, 'Phone number must be less than 15 digits.');
 
 // Optional reusable number field for experience
-const experienceField = z.coerce
-  .number({
-    required_error: 'Years of experience is required.',
-    invalid_type_error: 'Years of experience must be a number.',
-  })
+const experienceField = z.coerce.number({
+  required_error: 'Years of experience is required.',
+  invalid_type_error: 'Years of experience must be a number.',
+})
   .min(0, 'Years must be 0 or greater.')
   .max(50, 'Years must be 50 or less.');
+
 
 
 // --- 🧾 Auth Schemas ---

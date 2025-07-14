@@ -1,14 +1,15 @@
 import { z } from 'zod';
 
-// Malaysian phone number format
-const malaysianPhoneRegex = /^(\+?60|0)?1[0-46-9]-?[0-9]{7,8}$/;
+// ✅ Malaysian mobile phone number validation
+const malaysianPhoneRegex = /^(\+?60|0)?1[0-46-9][0-9]{7,8}$/;
 
-// Reusable field schemas
+// 🔁 Reusable field schemas
 const nameField = z
   .string()
   .min(1, 'Name is required')
   .max(100, 'Name must be at most 100 characters')
-  .regex(/^[a-zA-Z\s'-]+$/, 'Only letters, spaces, hyphens, apostrophes allowed');
+  .regex(/^[a-zA-Z\s'-]+$/, 'Only letters, spaces, hyphens, apostrophes allowed')
+  .trim();
 
 const emailField = z
   .string()
@@ -22,7 +23,7 @@ const phoneField = z
   .regex(malaysianPhoneRegex, 'Invalid Malaysian phone number')
   .optional()
   .nullable()
-  .transform((val) => (val === '' ? null : val));
+  .transform((val) => (val?.trim() === '' ? null : val?.trim()));
 
 const positionField = z
   .string()
@@ -36,7 +37,7 @@ const skillsField = z
   .trim()
   .optional()
   .nullable()
-  .transform((val) => (val === '' ? null : val));
+  .transform((val) => (val?.trim() === '' ? null : val?.trim()));
 
 const experienceYearsField = z
   .coerce.number()
@@ -51,9 +52,9 @@ const notesField = z
   .trim()
   .optional()
   .nullable()
-  .transform((val) => (val === '' ? null : val));
+  .transform((val) => (val?.trim() === '' ? null : val?.trim()));
 
-// ✅ Exported schema for candidate form validation
+// ✅ Final candidate validation schema
 export const candidateSchema = z.object({
   name: nameField,
   email: emailField,

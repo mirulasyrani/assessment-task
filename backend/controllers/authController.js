@@ -6,33 +6,36 @@ const { loginSchema, registerSchema } = require('../schemas/authSchema');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-const generateToken = (userId) => {
-  if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET not defined in environment variables.');
-  }
-
-  console.log('🔐 Generating JWT for user ID:', userId);
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: '7d',
-  });
-};
-
-const sendAuthCookie = (res, token) => {
-  console.log(`🍪 Sending cookie | Secure: ${isProduction} | SameSite: ${isProduction ? 'None' : 'Lax'}`);
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'None' : 'Lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
-};
-
+// Helper: clear auth cookie securely
 const clearAuthCookie = (res) => {
   console.log(`🧹 Clearing cookie | Secure: ${isProduction} | SameSite: ${isProduction ? 'None' : 'Lax'}`);
   res.clearCookie('token', {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'None' : 'Lax',
+    path: '/', // good practice to scope cookie to root
+  });
+};
+
+// Helper: set auth cookie securely
+const sendAuthCookie = (res, token) => {
+  console.log(`🔑 Setting auth cookie | Secure: ${isProduction} | SameSite: ${isProduction ? 'None' : 'Lax'}`);
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'None' : 'Lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+    path: '/',
+  });
+};
+
+const generateToken = (userId) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not defined. Please set it in your .env file.');
+  }
+  console.log('🔐 Generating JWT for user ID:', userId);
+  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: '7d',
   });
 };
 
@@ -43,44 +46,48 @@ const register = async (req, res, next) => {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
       console.error('❌ Validation failed:', parsed.error.format());
-      return next(parsed.error);
+      return next(new CustomError('Validation Error', 400, parsed.error.format()));
     }
 
     const { username, full_name, email, password } = parsed.data;
 
-    const existing = await pool.query(
+    const existingUser = await pool.query(
       'SELECT 1 FROM recruiters WHERE email = $1 OR username = $2',
       [email, username]
     );
 
-    if (existing.rows.length > 0) {
-      console.warn('⚠️ User already exists:', email, username);
+    if (existingUser.rows.length > 0) {
+      console.warn('⚠️ User with that email or username already exists:', email, username);
       return next(new CustomError('User with that email or username already exists.', 409));
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const result = await pool.query(
-      `INSERT INTO recruiters (username, full_name, email, password_hash, name)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO recruiters (username, full_name, email, password_hash)
+       VALUES ($1, $2, $3, $4)
        RETURNING id, username, full_name, email, created_at`,
-      [username, full_name, email, hashedPassword, full_name]
+      [username, full_name, email, hashedPassword]
     );
 
-    const token = generateToken(result.rows[0].id);
+    const newUser = result.rows[0];
+    const token = generateToken(newUser.id);
     sendAuthCookie(res, token);
 
     res.status(201).json({
       user: {
-        id: result.rows[0].id,
-        username: result.rows[0].username,
-        full_name: result.rows[0].full_name,
-        email: result.rows[0].email,
+        id: newUser.id,
+        username: newUser.username,
+        full_name: newUser.full_name,
+        email: newUser.email,
       },
       message: 'Registration successful.',
     });
   } catch (err) {
     console.error('❌ Register error:', err);
+    if (!(err instanceof CustomError)) {
+      return next(new CustomError('An unexpected error occurred during registration.', 500));
+    }
     next(err);
   }
 };
@@ -92,7 +99,7 @@ const login = async (req, res, next) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       console.error('❌ Validation failed:', parsed.error.format());
-      return next(parsed.error);
+      return next(new CustomError('Validation Error', 400, parsed.error.format()));
     }
 
     const { email, password } = parsed.data;
@@ -128,13 +135,15 @@ const login = async (req, res, next) => {
     });
   } catch (err) {
     console.error('❌ Login error:', err);
+    if (!(err instanceof CustomError)) {
+      return next(new CustomError('An unexpected error occurred during login.', 500));
+    }
     next(err);
   }
 };
 
 const getMe = async (req, res, next) => {
   console.log('📤 GET /me hit | userId from token:', req.userId);
-  console.log('📦 Cookies on /me request:', req.cookies);
 
   try {
     if (!req.userId) {
@@ -154,6 +163,9 @@ const getMe = async (req, res, next) => {
     res.status(200).json({ user });
   } catch (err) {
     console.error('❌ getMe error:', err);
+    if (!(err instanceof CustomError)) {
+      return next(new CustomError('An unexpected error occurred while fetching user data.', 500));
+    }
     next(err);
   }
 };

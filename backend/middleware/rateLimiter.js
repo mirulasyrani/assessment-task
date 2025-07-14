@@ -1,7 +1,7 @@
 const rateLimit = require('express-rate-limit');
 
 /**
- * Utility: Safe IP resolver supporting proxies (like Vercel or Render)
+ * Utility: Safely resolve client IP, respecting proxies like Vercel, Render, etc.
  */
 const getClientIp = (req) => {
   const forwarded = req.headers['x-forwarded-for'];
@@ -9,18 +9,19 @@ const getClientIp = (req) => {
 };
 
 /**
- * Logs each blocked request to console
+ * Logs each blocked request for monitoring/rate-limit auditing.
  */
 const logRateLimitHit = (req, message) => {
-  console.warn(`⛔ Rate limit triggered for IP: ${getClientIp(req)} on ${req.method} ${req.originalUrl}`);
+  const ip = getClientIp(req);
+  console.warn(`⛔ Rate limit triggered for IP: ${ip} on ${req.method} ${req.originalUrl}`);
 };
 
 /**
- * Rate limiter for sensitive auth routes
+ * Rate limiter for sensitive authentication endpoints (e.g., login, register).
  */
 const authLimiter = rateLimit({
-  windowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 mins
-  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX) || 10,
+  windowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // default 15 minutes
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 10, // default max 10 requests per window
   statusCode: 429,
   standardHeaders: true,
   legacyHeaders: false,
@@ -37,11 +38,11 @@ const authLimiter = rateLimit({
 });
 
 /**
- * General API limiter
+ * General API rate limiter for all other routes.
  */
 const apiLimiter = rateLimit({
-  windowMs: parseInt(process.env.API_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.API_RATE_LIMIT_MAX) || 100,
+  windowMs: parseInt(process.env.API_RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+  max: parseInt(process.env.API_RATE_LIMIT_MAX, 10) || 100,
   statusCode: 429,
   standardHeaders: true,
   legacyHeaders: false,

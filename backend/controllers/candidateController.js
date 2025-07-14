@@ -1,107 +1,117 @@
 const pool = require('../db');
 const { z } = require('zod');
 const CustomError = require('../utils/customError');
+const {
+  createCandidateSchema,
+  updateCandidateSchema,
+  candidateSearchSchema,
+} = require('../schemas/candidateSchema');
 
-// ✅ Whitelist sort columns to prevent SQL injection
 const VALID_SORT_COLUMNS = ['created_at', 'name', 'position', 'status'];
+
+// Centralized Zod error handler
+const handleZodError = (err, next) => {
+  if (err instanceof z.ZodError) {
+    return next(new CustomError('Validation Error', 400, err.format()));
+  }
+  next(err);
+};
 
 // GET /api/candidates
 const getCandidates = async (req, res, next) => {
   try {
+    const parsedQuery = candidateSearchSchema.safeParse(req.query);
+
+    if (!parsedQuery.success) {
+      console.error('❌ Validation failed for getCandidates query:', parsedQuery.error.format());
+      return handleZodError(parsedQuery.error, next);
+    }
+
     const {
-      page = 1,
-      limit = 10,
-      sort_by = 'created_at',
-      sort_order = 'desc',
-    } = req.query;
+      page,
+      limit,
+      sort_by,
+      sort_order,
+      status,
+      name,
+      position,
+      priority,
+    } = parsedQuery.data;
 
-    const parsedPage = z.coerce.number().int().min(1).parse(page);
-    const parsedLimit = z.coerce.number().int().min(1).max(100).parse(limit);
-    const offset = Math.max((parsedPage - 1) * parsedLimit, 0);
-
-    // ✅ Use safe default if sort_by is invalid
+    const offset = Math.max((page - 1) * limit, 0);
     const sortBy = VALID_SORT_COLUMNS.includes(sort_by) ? sort_by : 'created_at';
     const sortOrder = sort_order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
-    const result = await pool.query(
-      `SELECT * FROM candidates
-       WHERE recruiter_id = $1
-       ORDER BY ${sortBy} ${sortOrder}
-       LIMIT $2 OFFSET $3`,
-      [req.userId, parsedLimit, offset]
-    );
+    // Base query strings
+    let query = `SELECT * FROM candidates WHERE recruiter_id = $1`;
+    let countQuery = `SELECT COUNT(*) FROM candidates WHERE recruiter_id = $1`;
+    const queryParams = [req.userId];
+    let paramIndex = 2;
 
-    const count = await pool.query(
-      'SELECT COUNT(*) FROM candidates WHERE recruiter_id = $1',
-      [req.userId]
-    );
+    // Dynamic filters
+    if (status) {
+      query += ` AND status = $${paramIndex}`;
+      countQuery += ` AND status = $${paramIndex}`;
+      queryParams.push(status);
+      paramIndex++;
+    }
+    if (priority) {
+      query += ` AND priority = $${paramIndex}`;
+      countQuery += ` AND priority = $${paramIndex}`;
+      queryParams.push(priority);
+      paramIndex++;
+    }
+    if (name) {
+      query += ` AND LOWER(name) LIKE $${paramIndex}`;
+      countQuery += ` AND LOWER(name) LIKE $${paramIndex}`;
+      queryParams.push(`%${name.toLowerCase()}%`);
+      paramIndex++;
+    }
+    if (position) {
+      query += ` AND LOWER(position) LIKE $${paramIndex}`;
+      countQuery += ` AND LOWER(position) LIKE $${paramIndex}`;
+      queryParams.push(`%${position.toLowerCase()}%`);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY ${sortBy} ${sortOrder} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    queryParams.push(limit, offset);
+
+    // Execute queries
+    const [result, countResult] = await Promise.all([
+      pool.query(query, queryParams),
+      pool.query(countQuery, queryParams.slice(0, paramIndex - 1)), // exclude limit/offset for count
+    ]);
+
+    const total = parseInt(countResult.rows[0].count, 10);
 
     res.status(200).json({
       success: true,
       data: {
         candidates: result.rows,
         pagination: {
-          page: parsedPage,
-          limit: parsedLimit,
-          total: parseInt(count.rows[0].count),
-          pages: Math.ceil(count.rows[0].count / parsedLimit),
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
         },
       },
     });
   } catch (err) {
     console.error('❌ Error in getCandidates:', err);
-    next(err);
-  }
-};
-
-// GET /api/candidates/search?q=term
-const searchCandidates = async (req, res, next) => {
-  try {
-    const q = (req.query.q || '').trim();
-
-    if (!q) return res.status(200).json([]);
-
-    const result = await pool.query(
-      `SELECT * FROM candidates
-       WHERE recruiter_id = $1 AND (
-         LOWER(name) ILIKE $2 OR
-         LOWER(position) ILIKE $2 OR
-         LOWER(skills) ILIKE $2
-       )
-       ORDER BY created_at DESC`,
-      [req.userId, `%${q.toLowerCase()}%`]
-    );
-
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('❌ Error in searchCandidates:', err);
-    next(err);
-  }
-};
-
-// GET /api/candidates/filter?status=Interviewing
-const filterCandidates = async (req, res, next) => {
-  try {
-    const status = req.query.status;
-    if (!status) return res.status(200).json([]);
-
-    const result = await pool.query(
-      `SELECT * FROM candidates
-       WHERE recruiter_id = $1 AND status = $2
-       ORDER BY created_at DESC`,
-      [req.userId, status]
-    );
-
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('❌ Error in filterCandidates:', err);
-    next(err);
+    handleZodError(err, next);
   }
 };
 
 // POST /api/candidates
 const createCandidate = async (req, res, next) => {
   try {
+    const parsed = createCandidateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      console.error('❌ Validation failed for createCandidate:', parsed.error.format());
+      return handleZodError(parsed.error, next);
+    }
+
     const {
       name,
       email,
@@ -118,53 +128,72 @@ const createCandidate = async (req, res, next) => {
       expected_salary,
       availability_date,
       source,
-    } = req.body;
+    } = parsed.data;
+
+    const values = [
+      req.userId,
+      name,
+      email,
+      phone,
+      position,
+      skills,
+      experience_years,
+      status,
+      priority,
+      notes,
+      resume_url,
+      linkedin_url,
+      portfolio_url,
+      expected_salary,
+      availability_date,
+      source,
+    ];
 
     const result = await pool.query(
       `INSERT INTO candidates (
-        recruiter_id, name, email, phone, position, skills,
-        experience_years, status, priority, notes,
-        resume_url, linkedin_url, portfolio_url,
-        expected_salary, availability_date, source
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6,
-        $7, $8, $9, $10,
-        $11, $12, $13,
-        $14, $15, $16
-      )
-      RETURNING *`,
-      [
-        req.userId, name, email, phone, position, skills,
-        experience_years, status, priority, notes,
-        resume_url, linkedin_url, portfolio_url,
-        expected_salary, availability_date, source,
-      ]
+          recruiter_id, name, email, phone, position, skills,
+          experience_years, status, priority, notes,
+          resume_url, linkedin_url, portfolio_url,
+          expected_salary, availability_date, source
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, $10,
+          $11, $12, $13,
+          $14, $15, $16
+        ) RETURNING *`,
+      values
     );
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('❌ Error in createCandidate:', err);
-    next(err);
+    handleZodError(err, next);
   }
 };
 
 // PUT /api/candidates/:id
 const updateCandidate = async (req, res, next) => {
   try {
-    const candidateId = z.string().uuid().parse(req.params.id);
-    const fields = req.body;
+    const candidateId = z.string().uuid('Invalid candidate ID format.').parse(req.params.id);
 
-    const keys = Object.keys(fields);
+    const parsedFields = updateCandidateSchema.safeParse(req.body);
+    if (!parsedFields.success) {
+      console.error('❌ Validation failed for updateCandidate:', parsedFields.error.format());
+      return handleZodError(parsedFields.error, next);
+    }
+
+    const fieldsToUpdate = parsedFields.data;
+    const keys = Object.keys(fieldsToUpdate);
+
     if (keys.length === 0) {
-      return next(new CustomError('No fields provided to update.', 400));
+      return next(new CustomError('No valid fields provided to update.', 400));
     }
 
     const updates = keys.map((key, i) => `${key} = $${i + 1}`);
-    const values = keys.map((key) => fields[key]);
+    const values = keys.map((key) => fieldsToUpdate[key]);
 
-    values.push(candidateId); // $n+1
-    values.push(req.userId);  // $n+2
+    values.push(candidateId);
+    values.push(req.userId);
 
     const result = await pool.query(
       `UPDATE candidates SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
@@ -174,20 +203,20 @@ const updateCandidate = async (req, res, next) => {
     );
 
     if (result.rows.length === 0) {
-      return next(new CustomError('Candidate not found or not authorized.', 404));
+      return next(new CustomError('Candidate not found or not authorized to update.', 404));
     }
 
     res.status(200).json(result.rows[0]);
   } catch (err) {
     console.error('❌ Error in updateCandidate:', err);
-    next(err);
+    handleZodError(err, next);
   }
 };
 
 // DELETE /api/candidates/:id
 const deleteCandidate = async (req, res, next) => {
   try {
-    const candidateId = z.string().uuid().parse(req.params.id);
+    const candidateId = z.string().uuid('Invalid candidate ID format.').parse(req.params.id);
 
     const result = await pool.query(
       'DELETE FROM candidates WHERE id = $1 AND recruiter_id = $2 RETURNING *',
@@ -195,20 +224,18 @@ const deleteCandidate = async (req, res, next) => {
     );
 
     if (result.rows.length === 0) {
-      return next(new CustomError('Candidate not found or not authorized.', 404));
+      return next(new CustomError('Candidate not found or not authorized to delete.', 404));
     }
 
     res.status(200).json({ message: 'Candidate deleted successfully.' });
   } catch (err) {
     console.error('❌ Error in deleteCandidate:', err);
-    next(err);
+    handleZodError(err, next);
   }
 };
 
 module.exports = {
   getCandidates,
-  searchCandidates,
-  filterCandidates,
   createCandidate,
   updateCandidate,
   deleteCandidate,

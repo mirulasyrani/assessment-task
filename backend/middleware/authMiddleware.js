@@ -4,7 +4,7 @@ const CustomError = require('../utils/customError');
 const isProduction = process.env.NODE_ENV === 'production';
 
 /**
- * Middleware to authenticate user from JWT token in cookie
+ * Middleware to authenticate user from JWT token stored in cookies.
  */
 const authMiddleware = (req, res, next) => {
   console.log('🔐 [authMiddleware] Checking authentication...');
@@ -20,6 +20,7 @@ const authMiddleware = (req, res, next) => {
 
   try {
     if (!process.env.JWT_SECRET) {
+      // Fail-safe: this should be caught on server start
       throw new Error('JWT_SECRET not defined in environment variables.');
     }
 
@@ -34,11 +35,12 @@ const authMiddleware = (req, res, next) => {
 
     console.error(`❌ JWT Verification Error [${err.name}]: ${err.message}`);
 
-    // Clear cookie on error
+    // Clear auth cookie securely on error
     res.clearCookie('token', {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'None' : 'Lax',
+      path: '/',
     });
 
     if (isExpired) {
@@ -49,7 +51,8 @@ const authMiddleware = (req, res, next) => {
       return next(new CustomError('Authentication failed: Invalid token.', 401));
     }
 
-    return next(new CustomError('Authentication failed: Unexpected error.', 401));
+    // Catch-all for unexpected errors
+    return next(new CustomError('Authentication failed: Unexpected token error.', 401));
   }
 };
 

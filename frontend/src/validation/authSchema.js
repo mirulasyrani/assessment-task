@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
-// ✅ Regex: At least 1 lowercase, 1 uppercase, 1 digit, 1 special char, 8–32 chars
-const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d^$*+.!@#$%&]{8,32}$/;
+// ✅ Regex: At least 1 lowercase, 1 uppercase, 1 digit, 1 special char, and 8–32 characters
+const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,32}$/;
 
+// ✅ Shared fields
 const emailField = z
   .string()
   .email('Invalid email address')
@@ -19,6 +20,7 @@ const strongPasswordField = z
     'Password must include uppercase, lowercase, number, and special character'
   );
 
+// ✅ User Registration
 export const registerSchema = z
   .object({
     username: z
@@ -41,16 +43,19 @@ export const registerSchema = z
     path: ['confirmPassword'],
   });
 
+// ✅ Login
 export const loginSchema = z.object({
   email: emailField,
   password: z.string().min(1, 'Password is required'),
   rememberMe: z.boolean().optional(),
 });
 
+// ✅ Reset Password (Request Email)
 export const resetPasswordRequestSchema = z.object({
   email: emailField,
 });
 
+// ✅ Reset Password (Submit new password with token)
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, 'Reset token is required'),
@@ -62,6 +67,7 @@ export const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
+// ✅ Change Password (while logged in)
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Current password is required'),
@@ -77,14 +83,17 @@ export const changePasswordSchema = z
     path: ['newPassword'],
   });
 
+// ✅ Email Verification
 export const verifyEmailSchema = z.object({
   token: z.string().min(1, 'Verification token is required'),
 });
 
+// ✅ Resend Email Verification
 export const resendVerificationSchema = z.object({
   email: emailField,
 });
 
+// ✅ JWT & Refresh Token
 export const jwtTokenSchema = z.object({
   token: z.string().min(1, 'Token is required'),
 });
