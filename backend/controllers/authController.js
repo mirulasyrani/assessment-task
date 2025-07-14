@@ -6,7 +6,7 @@ const { loginSchema, registerSchema } = require('../schemas/authSchema');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Helper: clear auth cookie securely
+// ✅ Helper: clear auth cookie securely
 const clearAuthCookie = (res) => {
   console.log(`🧹 Clearing cookie | Secure: ${isProduction} | SameSite: ${isProduction ? 'None' : 'Lax'}`);
   res.clearCookie('token', {
@@ -17,21 +17,22 @@ const clearAuthCookie = (res) => {
   });
 };
 
-// Helper: set auth cookie securely
+// ✅ Helper: set auth cookie securely
 const sendAuthCookie = (res, token) => {
   console.log(`🔑 Setting auth cookie | Secure: ${isProduction} | SameSite: ${isProduction ? 'None' : 'Lax'}`);
   res.cookie('token', token, {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'None' : 'Lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/',
   });
 };
 
+// ✅ Helper: create JWT
 const generateToken = (userId) => {
   if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is not defined. Please set it in your .env file.');
+    throw new Error('JWT_SECRET not defined in .env');
   }
   console.log('🔐 Generating JWT for user ID:', userId);
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
@@ -57,7 +58,7 @@ const register = async (req, res, next) => {
     );
 
     if (existingUser.rows.length > 0) {
-      console.warn('⚠️ User with that email or username already exists:', email, username);
+      console.warn('⚠️ User exists:', email, username);
       return next(new CustomError('User with that email or username already exists.', 409));
     }
 
@@ -85,10 +86,7 @@ const register = async (req, res, next) => {
     });
   } catch (err) {
     console.error('❌ Register error:', err);
-    if (!(err instanceof CustomError)) {
-      return next(new CustomError('An unexpected error occurred during registration.', 500));
-    }
-    next(err);
+    next(err instanceof CustomError ? err : new CustomError('Unexpected error during registration.', 500));
   }
 };
 
@@ -111,7 +109,7 @@ const login = async (req, res, next) => {
 
     const recruiter = recruiterRes.rows[0];
     if (!recruiter) {
-      console.warn('⚠️ No user found with email:', email);
+      console.warn('⚠️ No user with email:', email);
       return next(new CustomError('Invalid credentials.', 401));
     }
 
@@ -135,10 +133,7 @@ const login = async (req, res, next) => {
     });
   } catch (err) {
     console.error('❌ Login error:', err);
-    if (!(err instanceof CustomError)) {
-      return next(new CustomError('An unexpected error occurred during login.', 500));
-    }
-    next(err);
+    next(err instanceof CustomError ? err : new CustomError('Unexpected error during login.', 500));
   }
 };
 
@@ -163,10 +158,7 @@ const getMe = async (req, res, next) => {
     res.status(200).json({ user });
   } catch (err) {
     console.error('❌ getMe error:', err);
-    if (!(err instanceof CustomError)) {
-      return next(new CustomError('An unexpected error occurred while fetching user data.', 500));
-    }
-    next(err);
+    next(err instanceof CustomError ? err : new CustomError('Unexpected error while fetching user.', 500));
   }
 };
 
