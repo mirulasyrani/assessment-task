@@ -48,22 +48,21 @@ const Dashboard = () => {
         sortBy,
       };
 
-     const res = await API.get('/candidates', { params });
-     console.log('📥 /candidates response:', res.data);
+      const res = await API.get('/candidates', { params });
+      console.log('📥 /candidates response:', res.data);
 
-     if (Array.isArray(res.data)) {
-       setCandidates(res.data);
-     } else if (Array.isArray(res.data.data)) {
-       setCandidates(res.data.data);
-     } else if (Array.isArray(res.data.candidates)) {
-       setCandidates(res.data.candidates);
-     } else {
-       console.warn('⚠️ Unexpected /candidates response format:', res.data);
-       setCandidates([]);
+      if (Array.isArray(res.data)) {
+        setCandidates(res.data);
+      } else if (Array.isArray(res.data.data)) {
+        setCandidates(res.data.data);
+      } else if (Array.isArray(res.data.candidates)) {
+        setCandidates(res.data.candidates);
+      } else {
+        console.warn('⚠️ Unexpected /candidates response format:', res.data);
+        setCandidates([]);
       }
-
     } catch (err) {
-      console.error('Error fetching candidates:', err);
+      console.error('❌ Error fetching candidates:', err);
       logFrontendErrorToBackend(err, 'fetch_candidates_failure');
       toast.error('Failed to load candidates.');
     } finally {
@@ -86,7 +85,7 @@ const Dashboard = () => {
       toast.info('Candidate deleted successfully!');
       fetchCandidates();
     } catch (err) {
-      console.error('Error deleting candidate:', err);
+      console.error('❌ Error deleting candidate:', err);
       logFrontendErrorToBackend(err, `delete_candidate_failure_id_${id}`);
       toast.error('Failed to delete candidate.');
     } finally {
@@ -108,7 +107,9 @@ const Dashboard = () => {
 
   const handleStatusChange = async (candidateId, newStatus) => {
     const originalCandidates = [...candidates];
-    setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, status: newStatus } : c));
+    setCandidates((prev) =>
+      prev.map((c) => (c.id === candidateId ? { ...c, status: newStatus } : c))
+    );
 
     try {
       const res = await API.get(`/candidates/${candidateId}`);
@@ -217,7 +218,7 @@ const Dashboard = () => {
                     onChange={(e) => handleStatusChange(c.id, e.target.value)}
                     className="candidate-status-select"
                   >
-                    {CANDIDATE_STATUSES.filter(s => s !== 'all').map((s) => (
+                    {CANDIDATE_STATUSES.filter((s) => s !== 'all').map((s) => (
                       <option key={s} value={s}>
                         {s.charAt(0).toUpperCase() + s.slice(1)}
                       </option>
@@ -255,7 +256,7 @@ const Dashboard = () => {
         ariaDescribedBy="candidate-form-description"
       >
         <CandidateForm
-          initialData={selectedCandidate}
+          initial={selectedCandidate}
           onClose={() => {
             setShowFormModal(false);
             setSelectedCandidate(null);

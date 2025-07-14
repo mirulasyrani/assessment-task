@@ -21,30 +21,31 @@ const authMiddleware = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.userId;
+
+    console.log('✅ Token verified. User ID:', req.userId);
     return next();
   } catch (err) {
-    const env = process.env.NODE_ENV || 'development';
+    const isExpired = err.name === 'TokenExpiredError';
+    const isInvalid = err.name === 'JsonWebTokenError';
 
-    if (env !== 'production') {
-      console.error('❌ JWT verification failed:', err.name, '-', err.message);
-    }
+    console.error(`❌ JWT Error [${err.name}]: ${err.message}`);
 
-    // Clear cookie on expired token
-    if (err.name === 'TokenExpiredError') {
-      res.clearCookie('token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'None',
-      });
+    // Clear cookie if token is expired or invalid
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: true,        // 🔐 Must be true for cross-origin
+      sameSite: 'None',    // 🌍 Cross-site safe
+    });
 
+    if (isExpired) {
       return next(new CustomError('Authentication required: Token expired. Please log in again.', 401));
     }
 
-    if (err.name === 'JsonWebTokenError') {
+    if (isInvalid) {
       return next(new CustomError('Authentication failed: Invalid token.', 401));
     }
 
-    return next(new CustomError('Authentication failed: Unexpected token error.', 401));
+    return next(new CustomError('Authentication failed: Unexpected error.', 401));
   }
 };
 

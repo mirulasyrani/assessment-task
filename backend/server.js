@@ -5,51 +5,49 @@ require('dotenv').config();
 const errorHandler = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/auth');
-const candidateRoutes = require('./routes/candidates'); // Optional if you use it
+const candidateRoutes = require('./routes/candidates'); // Optional if needed
 
 const app = express();
-app.set('trust proxy', 1); // ✅ Required for cookies behind proxies like Vercel/Render
+app.set('trust proxy', 1); // ✅ For cookies behind proxies like Render
 
+// ✅ Allowed Origins
 const allowedOrigins = [
   'https://assessment-task-five.vercel.app',
   'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
   'http://localhost:3000',
 ];
 
-// ✅ CORS
+// ✅ CORS config for cookie-based auth
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn('⛔ Blocked by CORS:', origin);
       callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
-  credentials: true,
+  credentials: true, // 🔑 Required to send/receive cookies cross-origin
 }));
 
 // ✅ Middleware
 app.use(express.json());
 app.use(cookieParser());
+
+// ✅ Log requests and cookies
 app.use((req, res, next) => {
   console.log(`➡️ ${req.method} ${req.originalUrl}`);
-  next();
-});
-
-
-// ✅ Debug incoming cookies
-app.use((req, res, next) => {
   console.log('🍪 Incoming cookies:', req.cookies || {});
   next();
 });
 
-// ✅ Mount routes
+// ✅ Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/candidates', candidateRoutes); // If applicable
+app.use('/api/candidates', candidateRoutes); // Optional
 
-// ✅ Log frontend error route
+// ✅ Frontend error logger (optional)
 app.post('/api/logs/frontend-error', (req, res) => {
-  console.error('Frontend error log:', req.body);
+  console.error('🛑 Frontend error log:', req.body);
   res.json({ message: 'Logged' });
 });
 

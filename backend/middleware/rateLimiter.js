@@ -1,43 +1,42 @@
 const rateLimit = require('express-rate-limit');
 
 /**
- * @desc Rate limiter for authentication routes (register, login)
- * Limits attempts to prevent brute-force attacks.
+ * @desc Rate limiter for authentication routes (e.g., /register, /login)
+ * Limits requests to prevent brute-force and abuse.
  */
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 requests per windowMs for auth routes
-    statusCode: 429, // 429 Too Many Requests
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    message: {
-        status: 'error',
-        message: 'Too many authentication requests from this IP. Please try again after 15 minutes.',
-    },
-    // By default, keyGenerator uses `req.ip`. Explicitly stating it for clarity.
-    keyGenerator: (req) => req.ip,
-    skipSuccessfulRequests: false, // Count successful requests as well
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Allow 10 requests per IP per window
+  statusCode: 429,
+  standardHeaders: true, // Adds `RateLimit-*` headers
+  legacyHeaders: false,  // Disables old `X-RateLimit-*` headers
+  message: {
+    status: 'error',
+    message: 'Too many authentication attempts. Please try again after 15 minutes.',
+  },
+  keyGenerator: (req) => req.ip,
+  skipSuccessfulRequests: false, // Count successful attempts too
 });
 
 /**
- * @desc General API rate limiter for non-authentication routes (e.g., candidate management)
- * Provides a higher limit for typical API usage.
+ * @desc General API limiter (non-auth routes, e.g., /candidates)
+ * Higher threshold for general usage.
  */
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs for general API
-    statusCode: 429, // 429 Too Many Requests
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {
-        status: 'error',
-        message: 'Too many API requests from this IP. Please try again after 15 minutes.',
-    },
-    keyGenerator: (req) => req.ip,
-    skipSuccessfulRequests: false,
+  windowMs: 15 * 60 * 1000,
+  max: 100, // 100 requests per IP per window
+  statusCode: 429,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    message: 'Too many requests. Please try again after 15 minutes.',
+  },
+  keyGenerator: (req) => req.ip,
+  skipSuccessfulRequests: false,
 });
 
 module.exports = {
-    authLimiter,
-    apiLimiter,
+  authLimiter,
+  apiLimiter,
 };

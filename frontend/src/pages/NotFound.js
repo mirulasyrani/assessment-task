@@ -1,15 +1,26 @@
-// src/pages/NotFound.js
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+// import styles from './NotFound.module.css'; // Uncomment if using CSS module
 
 const NotFound = () => {
   return (
     <Layout>
-      <div style={{ textAlign: 'center', marginTop: '50px' }}>
-        <h1 style={{ fontSize: '48px' }}>404</h1>
-        <p style={{ fontSize: '18px' }}>Sorry, the page you’re looking for doesn't exist.</p>
-        <Link to="/" className="nav-btn" style={{ marginTop: '20px', display: 'inline-block' }}>
+      <div
+        className="not-found-container"
+        role="alert"
+        aria-labelledby="not-found-title"
+        aria-describedby="not-found-desc"
+      >
+        <h1 id="not-found-title">404</h1>
+        <p id="not-found-desc">
+          Oops! The page you’re looking for seems to have gone on vacation.
+        </p>
+        <Link
+          to="/"
+          className="nav-btn not-found-link-wrapper"
+          aria-label="Return to homepage"
+        >
           ← Back to Home
         </Link>
       </div>

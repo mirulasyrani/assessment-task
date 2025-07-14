@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
+// ✅ Regex: At least 1 lowercase, 1 uppercase, 1 digit, 1 special char, 8–32 chars
 const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d^$*+.!@#$%&]{8,32}$/;
 
 const emailField = z
   .string()
   .email('Invalid email address')
-  .max(100)
+  .max(100, 'Email must be at most 100 characters')
   .trim()
   .toLowerCase();
 
@@ -18,25 +19,27 @@ const strongPasswordField = z
     'Password must include uppercase, lowercase, number, and special character'
   );
 
-export const registerSchema = z.object({
-  username: z
-    .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username must be at most 50 characters')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Only letters, numbers, hyphens, and underscores allowed'),
-  full_name: z
-    .string()
-    .max(100, 'Full name too long')
-    .trim()
-    .optional()
-    .or(z.literal('')),
-  email: emailField,
-  password: strongPasswordField,
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+export const registerSchema = z
+  .object({
+    username: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .max(50, 'Username must be at most 50 characters')
+      .regex(/^[a-zA-Z0-9_-]+$/, 'Only letters, numbers, hyphens, and underscores allowed'),
+    full_name: z
+      .string()
+      .max(100, 'Full name too long')
+      .trim()
+      .optional()
+      .or(z.literal('')),
+    email: emailField,
+    password: strongPasswordField,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 export const loginSchema = z.object({
   email: emailField,
@@ -48,20 +51,23 @@ export const resetPasswordRequestSchema = z.object({
   email: emailField,
 });
 
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
-  newPassword: strongPasswordField,
-  confirmPassword: z.string(),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Reset token is required'),
+    newPassword: strongPasswordField,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: strongPasswordField,
-  confirmPassword: z.string(),
-})
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: strongPasswordField,
+    confirmPassword: z.string(),
+  })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],

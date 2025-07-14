@@ -47,7 +47,10 @@ const RegisterPage = () => {
     } catch (e) {
       const fieldPath = e?.errors?.[0]?.path?.[0] || 'unknown';
       const message = e?.errors?.[0]?.message || 'Invalid input';
-      if (fieldPath === field || (fieldPath === 'confirmPassword' && (field === 'password' || field === 'confirmPassword'))) {
+      if (
+        fieldPath === field ||
+        (fieldPath === 'confirmPassword' && (field === 'password' || field === 'confirmPassword'))
+      ) {
         setErrors((prev) => ({ ...prev, [field]: message }));
       }
     }
@@ -60,8 +63,7 @@ const RegisterPage = () => {
 
     try {
       registerSchema.parse(form);
-      await authRegister(form); // Send only needed fields inside the hook
-
+      await authRegister(form);
       toast.success('Registration successful! Redirecting to dashboard...');
       navigate('/dashboard');
     } catch (err) {
@@ -78,7 +80,7 @@ const RegisterPage = () => {
         );
       } else if (err.response) {
         if (err.response.status === 409) {
-          toast.error(err.response.data.message || 'User with this email/username already exists.');
+          toast.error(err.response.data.message || 'User already exists.');
         } else {
           toast.error(err.response.data.message || 'Registration failed. Please try again.');
         }

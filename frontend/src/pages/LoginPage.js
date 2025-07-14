@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { loginSchema } from '../validation/schemas';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import styles from './AuthForm.module.css';
+import API from '../services/api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -13,13 +14,31 @@ const LoginPage = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [localLoading, setLocalLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // ✅ Password visibility toggle
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
       navigate('/dashboard');
     }
   }, [user, authLoading, navigate]);
+
+  const logFrontendErrorToBackend = useCallback(async (error, context) => {
+    try {
+      const errorDetails = {
+        message: error?.message || 'Unknown login error',
+        stack: error?.stack,
+        context,
+        response_data: error?.response?.data,
+        response_status: error?.response?.status,
+        url: error?.config?.url || window.location.href,
+        method: error?.config?.method || 'POST',
+        timestamp: new Date().toISOString(),
+      };
+      await API.post('/logs/frontend-error', errorDetails);
+    } catch (logError) {
+      console.error('❌ Failed to log error to backend:', logError);
+    }
+  }, []);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -57,10 +76,13 @@ const LoginPage = () => {
           `Please fix the following:\n${err.errors.map((e) => `• ${e.message}`).join('\n')}`,
           { autoClose: false, style: { whiteSpace: 'pre-line' } }
         );
-      } else if (err.response) {
-        toast.error(err.response.data.message || 'Login failed. Please check your credentials.');
       } else {
-        toast.error('Login failed. Please check your network connection.');
+        logFrontendErrorToBackend(err, 'login_failure');
+        if (err.response) {
+          toast.error(err.response.data?.message || 'Login failed. Please check your credentials.');
+        } else {
+          toast.error('Login failed. Please check your internet connection.');
+        }
       }
     } finally {
       setLocalLoading(false);

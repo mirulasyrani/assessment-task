@@ -2,6 +2,9 @@ const pool = require('../db');
 const { z } = require('zod');
 const CustomError = require('../utils/customError');
 
+// ✅ Whitelist sort columns to prevent SQL injection
+const VALID_SORT_COLUMNS = ['created_at', 'name', 'position', 'status'];
+
 // GET /api/candidates
 const getCandidates = async (req, res, next) => {
   try {
@@ -14,12 +17,16 @@ const getCandidates = async (req, res, next) => {
 
     const parsedPage = z.coerce.number().int().min(1).parse(page);
     const parsedLimit = z.coerce.number().int().min(1).max(100).parse(limit);
-    const offset = (parsedPage - 1) * parsedLimit;
+    const offset = Math.max((parsedPage - 1) * parsedLimit, 0);
+
+    // ✅ Use safe default if sort_by is invalid
+    const sortBy = VALID_SORT_COLUMNS.includes(sort_by) ? sort_by : 'created_at';
+    const sortOrder = sort_order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
     const result = await pool.query(
       `SELECT * FROM candidates
        WHERE recruiter_id = $1
-       ORDER BY ${sort_by} ${sort_order.toUpperCase()}
+       ORDER BY ${sortBy} ${sortOrder}
        LIMIT $2 OFFSET $3`,
       [req.userId, parsedLimit, offset]
     );
@@ -42,6 +49,7 @@ const getCandidates = async (req, res, next) => {
       },
     });
   } catch (err) {
+    console.error('❌ Error in getCandidates:', err);
     next(err);
   }
 };
@@ -51,9 +59,7 @@ const searchCandidates = async (req, res, next) => {
   try {
     const q = (req.query.q || '').trim();
 
-    if (!q) {
-      return res.status(200).json([]);
-    }
+    if (!q) return res.status(200).json([]);
 
     const result = await pool.query(
       `SELECT * FROM candidates
@@ -68,11 +74,12 @@ const searchCandidates = async (req, res, next) => {
 
     res.status(200).json(result.rows);
   } catch (err) {
+    console.error('❌ Error in searchCandidates:', err);
     next(err);
   }
 };
 
-// GET /api/candidates/filter (optional, you can remove this if search covers it)
+// GET /api/candidates/filter?status=Interviewing
 const filterCandidates = async (req, res, next) => {
   try {
     const status = req.query.status;
@@ -87,6 +94,7 @@ const filterCandidates = async (req, res, next) => {
 
     res.status(200).json(result.rows);
   } catch (err) {
+    console.error('❌ Error in filterCandidates:', err);
     next(err);
   }
 };
@@ -136,6 +144,7 @@ const createCandidate = async (req, res, next) => {
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    console.error('❌ Error in createCandidate:', err);
     next(err);
   }
 };
@@ -146,7 +155,6 @@ const updateCandidate = async (req, res, next) => {
     const candidateId = z.string().uuid().parse(req.params.id);
     const fields = req.body;
 
-    // Build dynamic SET clause
     const keys = Object.keys(fields);
     if (keys.length === 0) {
       return next(new CustomError('No fields provided to update.', 400));
@@ -155,8 +163,8 @@ const updateCandidate = async (req, res, next) => {
     const updates = keys.map((key, i) => `${key} = $${i + 1}`);
     const values = keys.map((key) => fields[key]);
 
-    values.push(candidateId);       // $n+1
-    values.push(req.userId);        // $n+2
+    values.push(candidateId); // $n+1
+    values.push(req.userId);  // $n+2
 
     const result = await pool.query(
       `UPDATE candidates SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
@@ -171,6 +179,7 @@ const updateCandidate = async (req, res, next) => {
 
     res.status(200).json(result.rows[0]);
   } catch (err) {
+    console.error('❌ Error in updateCandidate:', err);
     next(err);
   }
 };
@@ -191,6 +200,7 @@ const deleteCandidate = async (req, res, next) => {
 
     res.status(200).json({ message: 'Candidate deleted successfully.' });
   } catch (err) {
+    console.error('❌ Error in deleteCandidate:', err);
     next(err);
   }
 };

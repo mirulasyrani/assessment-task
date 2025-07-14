@@ -17,10 +17,11 @@ const generateToken = (userId) => {
 const sendAuthCookie = (res, token) => {
   res.cookie('token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'None',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: true,         // 🔐 Required for cross-origin (Render + Vercel)
+    sameSite: 'None',     // 🌍 Required for cross-origin cookies
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
+  console.log('✅ Auth cookie sent.');
 };
 
 const register = async (req, res, next) => {
@@ -29,7 +30,7 @@ const register = async (req, res, next) => {
 
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
-      console.error('❌ Validation failed:', parsed.error);
+      console.error('❌ Validation failed:', parsed.error.format());
       return next(parsed.error);
     }
 
@@ -41,6 +42,7 @@ const register = async (req, res, next) => {
     );
 
     if (userExists.rows.length > 0) {
+      console.warn('⚠️ User already exists:', email, username);
       return next(new CustomError('User with that email or username already exists.', 409));
     }
 
@@ -77,7 +79,7 @@ const login = async (req, res, next) => {
 
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
-      console.error('❌ Validation failed:', parsed.error);
+      console.error('❌ Validation failed:', parsed.error.format());
       return next(parsed.error);
     }
 
@@ -90,11 +92,13 @@ const login = async (req, res, next) => {
 
     const recruiter = recruiterResult.rows[0];
     if (!recruiter) {
+      console.warn('⚠️ Recruiter not found with email:', email);
       return next(new CustomError('Invalid credentials.', 401));
     }
 
     const isMatch = await bcrypt.compare(password, recruiter.password_hash);
     if (!isMatch) {
+      console.warn('⚠️ Password mismatch for email:', email);
       return next(new CustomError('Invalid credentials.', 401));
     }
 
@@ -118,6 +122,8 @@ const login = async (req, res, next) => {
 
 const getMe = async (req, res, next) => {
   try {
+    console.log('📤 /me route hit. User ID from token:', req.userId);
+
     if (!req.userId) {
       return next(new CustomError('Unauthorized: No user ID found.', 401));
     }
@@ -143,10 +149,11 @@ const getMe = async (req, res, next) => {
 const logout = async (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,       // 🔐 Same as cookie set
     sameSite: 'None',
   });
 
+  console.log('👋 Logout: cookie cleared.');
   res.status(200).json({ message: 'Logged out successfully.' });
 };
 

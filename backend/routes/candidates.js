@@ -1,5 +1,3 @@
-// backend/routes/candidates.js
-
 const express = require('express');
 const router = express.Router();
 const { z } = require('zod');
@@ -20,31 +18,36 @@ const {
   deleteCandidate,
 } = require('../controllers/candidateController');
 
+const pool = require('../db'); // ✅ PostgreSQL connection pool
+
+// Validate candidate ID param
 const idParamSchema = z.object({
   id: z.string().min(1, 'Candidate ID is required'),
 });
 
-const pool = require('../db'); // ✅ make sure this points to your PostgreSQL pool
-
-// Protect all routes
+// ✅ Apply authentication to all candidate routes
 router.use(authMiddleware);
 
-// ✅ Working summary route using raw SQL
+/**
+ * @route   GET /api/candidates/summary
+ * @desc    Returns total count and status breakdown
+ * @access  Private
+ */
 router.get('/summary', async (req, res, next) => {
   try {
     const client = await pool.connect();
 
-    // Count total candidates
-    const totalRes = await client.query(`SELECT COUNT(*) FROM candidates`);
+    // Total candidate count
+    const totalRes = await client.query(`SELECT COUNT(*) FROM candidates WHERE recruiter_id = $1`, [req.userId]);
     const total = parseInt(totalRes.rows[0].count, 10);
 
-    // Group by status
-    const statusRes = await client.query(`
-      SELECT status, COUNT(*) FROM candidates GROUP BY status
-    `);
+    // Count by status
+    const statusRes = await client.query(
+      `SELECT status, COUNT(*) FROM candidates WHERE recruiter_id = $1 GROUP BY status`,
+      [req.userId]
+    );
 
     const summary = { total };
-
     for (const row of statusRes.rows) {
       summary[row.status] = parseInt(row.count, 10);
     }
@@ -57,11 +60,14 @@ router.get('/summary', async (req, res, next) => {
   }
 });
 
+// ✅ List, search, filter
 router.get('/', getCandidates);
-router.get('/search', validate(candidateSearchSchema), searchCandidates);
-router.get('/filter', validate(candidateSearchSchema), filterCandidates);
+router.get('/search', validate(candidateSearchSchema, 'query'), searchCandidates);
+router.get('/filter', validate(candidateSearchSchema, 'query'), filterCandidates);
+
+// ✅ Create, update, delete
 router.post('/', validate(createCandidateSchema), createCandidate);
 router.put('/:id', validate(updateCandidateSchema), updateCandidate);
-router.delete('/:id', validate(idParamSchema), deleteCandidate);
+router.delete('/:id', validate(idParamSchema, 'params'), deleteCandidate);
 
 module.exports = router;

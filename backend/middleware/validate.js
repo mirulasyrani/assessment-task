@@ -1,13 +1,12 @@
-// backend/middleware/validate.js
 const { ZodError } = require('zod');
 
 /**
- * Middleware to validate request body, query, or params using a Zod schema.
- * Supports async schema refinements. Parsed data replaces `req[target]`.
+ * @desc Middleware to validate req.body, req.query, or req.params using a Zod schema.
+ * If validation passes, replaces original input with parsed data.
  *
- * @param {import('zod').ZodSchema} schema - The Zod schema to validate against.
- * @param {'body' | 'query' | 'params'} target - Which part of the request to validate (default: 'body').
- * @returns {Function} Express middleware function.
+ * @param {import('zod').ZodSchema} schema - The Zod schema to validate.
+ * @param {'body' | 'query' | 'params'} target - Target location to validate (default: 'body').
+ * @returns {Function} Express middleware.
  */
 const validate = (schema, target = 'body') => async (req, res, next) => {
   try {
@@ -16,18 +15,19 @@ const validate = (schema, target = 'body') => async (req, res, next) => {
     next();
   } catch (err) {
     if (err instanceof ZodError) {
-      // Return validation errors as a proper JSON response
+      console.warn(`❌ Zod validation failed for ${target}:`, err.issues);
+
       return res.status(400).json({
         success: false,
         message: 'Validation failed.',
-        errors: err.issues.map((issue) => ({
+        errors: err.issues.map(issue => ({
           field: issue.path.join('.'),
           message: issue.message,
         })),
       });
     }
 
-    // Any other error, pass to global error handler
+    // Let global error handler deal with unexpected errors
     next(err);
   }
 };
