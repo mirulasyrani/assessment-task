@@ -5,15 +5,17 @@ require('dotenv').config();
 const errorHandler = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/auth');
-const candidateRoutes = require('./routes/candidates'); // Optional
+const candidateRoutes = require('./routes/candidates');
 
 const app = express();
-app.set('trust proxy', 1); // Required for secure cookies on Render/Vercel
+
+// ✅ Trust proxy so that secure cookies work correctly on Render/Vercel
+app.set('trust proxy', 1);
 
 // ✅ Define allowed frontend URLs
 const allowedOrigins = [
-  process.env.CLIENT_URL?.replace(/\/$/, ''), // from .env
-  'https://assessment-task-five.vercel.app', // your deployed frontend
+  process.env.CLIENT_URL?.replace(/\/$/, ''),
+  'https://assessment-task-five.vercel.app',
   'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
   'http://localhost:3000',
 ].filter(Boolean);
@@ -30,25 +32,25 @@ const corsOptions = {
     console.warn(`⛔ Blocked by CORS: ${origin}`);
     return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
-  credentials: true,
+  credentials: true, // ✅ Allow credentials (cookies)
 };
 
-// ✅ Apply CORS globally
+// ✅ Apply CORS globally BEFORE all routes/middleware
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions)); // Preflight
 
 // ✅ Middlewares
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Logger
+// ✅ Request Logger
 app.use((req, res, next) => {
   console.log(`➡️ ${req.method} ${req.originalUrl} from IP: ${req.ip}`);
   console.log('🍪 Cookies:', req.cookies || {});
   next();
 });
 
-// ✅ Healthcheck or CORS test route
+// ✅ Healthcheck route
 app.get('/api/test-cors', (req, res) => {
   res.json({ message: 'CORS is working properly!' });
 });

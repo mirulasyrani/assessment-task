@@ -13,7 +13,7 @@ const clearAuthCookie = (res) => {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'None' : 'Lax',
-    path: '/', // good practice to scope cookie to root
+    path: '/',
   });
 };
 
@@ -139,6 +139,7 @@ const login = async (req, res, next) => {
 
 const getMe = async (req, res, next) => {
   console.log('📤 GET /me hit | userId from token:', req.userId);
+  console.log('🍪 Incoming cookies:', req.headers.cookie);
 
   try {
     if (!req.userId) {
