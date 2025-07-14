@@ -7,6 +7,7 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 app.set('trust proxy', 1);
 
+
 const allowedOrigins = [
   'https://assessment-task-five.vercel.app',
   'https://assessment-task-git-main-mirulasyranis-projects.vercel.app',
@@ -14,8 +15,14 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: (origin, cb) => (!origin || allowedOrigins.includes(origin)) ? cb(null, true) : cb(new Error('CORS')),
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Not allowed by CORS: ${origin}`));
+    }
+  },
+  credentials: true,
 }));
 
 app.use(express.json());
