@@ -1,18 +1,22 @@
 const jwt = require('jsonwebtoken');
 const CustomError = require('../utils/customError');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 /**
  * Middleware to authenticate user from JWT token in cookie
  */
 const authMiddleware = (req, res, next) => {
+  console.log('🔐 [authMiddleware] Checking authentication...');
+  console.log('🌐 ENV:', process.env.NODE_ENV);
   console.log('🍪 Incoming cookies:', req.cookies);
 
-  if (!req.cookies || !req.cookies.token) {
-    console.warn('⚠️ No cookies or token found in request.');
+  const token = req.cookies?.token;
+
+  if (!token) {
+    console.warn('⚠️ No JWT token found in cookies.');
     return next(new CustomError('Authentication required: No token provided.', 401));
   }
-
-  const token = req.cookies.token;
 
   try {
     if (!process.env.JWT_SECRET) {
@@ -22,19 +26,19 @@ const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.userId;
 
-    console.log('✅ Token verified. User ID:', req.userId);
+    console.log('✅ Token verified. Extracted userId:', req.userId);
     return next();
   } catch (err) {
     const isExpired = err.name === 'TokenExpiredError';
     const isInvalid = err.name === 'JsonWebTokenError';
 
-    console.error(`❌ JWT Error [${err.name}]: ${err.message}`);
+    console.error(`❌ JWT Verification Error [${err.name}]: ${err.message}`);
 
-    // Clear cookie if token is expired or invalid
+    // Clear cookie on error
     res.clearCookie('token', {
       httpOnly: true,
-      secure: true,        // 🔐 Must be true for cross-origin
-      sameSite: 'None',    // 🌍 Cross-site safe
+      secure: isProduction,
+      sameSite: isProduction ? 'None' : 'Lax',
     });
 
     if (isExpired) {

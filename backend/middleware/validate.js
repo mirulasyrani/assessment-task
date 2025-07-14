@@ -1,34 +1,36 @@
 const { ZodError } = require('zod');
 
 /**
- * @desc Middleware to validate req.body, req.query, or req.params using a Zod schema.
+ * @desc Middleware to validate req.body, req.query, req.params, or req.headers using a Zod schema.
  * If validation passes, replaces original input with parsed data.
  *
  * @param {import('zod').ZodSchema} schema - The Zod schema to validate.
- * @param {'body' | 'query' | 'params'} target - Target location to validate (default: 'body').
+ * @param {'body' | 'query' | 'params' | 'headers'} target - Target location to validate (default: 'body').
  * @returns {Function} Express middleware.
  */
 const validate = (schema, target = 'body') => async (req, res, next) => {
   try {
-    const validatedData = await schema.parseAsync(req[target]);
-    req[target] = validatedData;
-    next();
+    const validated = await schema.parseAsync(req[target]);
+    req[target] = validated;
+    return next();
   } catch (err) {
     if (err instanceof ZodError) {
-      console.warn(`❌ Zod validation failed for ${target}:`, err.issues);
+      const route = `${req.method} ${req.originalUrl}`;
+      const ip = req.headers['x-forwarded-for'] || req.ip;
+      console.warn(`❌ Zod validation error (${target}) on ${route} from ${ip}:`, err.issues);
 
       return res.status(400).json({
-        success: false,
+        status: 'error',
         message: 'Validation failed.',
         errors: err.issues.map(issue => ({
-          field: issue.path.join('.'),
+          field: issue.path?.join('.') || 'unknown',
           message: issue.message,
+          code: issue.code,
         })),
       });
     }
 
-    // Let global error handler deal with unexpected errors
-    next(err);
+    return next(err); // Unhandled non-Zod errors go to global handler
   }
 };
 

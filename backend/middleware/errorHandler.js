@@ -8,12 +8,22 @@ const errorHandler = (err, req, res, next) => {
   const url = req.originalUrl;
   const userId = req.userId || 'N/A';
 
-  console.error(`❌ Error in ${method} ${url} by user ${userId}:`, {
+  const errorLog = {
     message: err.message,
     code: err.code,
     name: err.name,
     constraint: err.constraint || undefined,
-  });
+  };
+
+  // Log basic context
+  console.error(`❌ Error in ${method} ${url} by user ${userId}:`, errorLog);
+
+  // Debug JWT-specific issues more clearly
+  if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
+    console.warn('🛑 JWT error triggered. Logging request cookies and headers:');
+    console.warn('🍪 Cookies:', req.cookies || {});
+    console.warn('🧠 Headers:', req.headers);
+  }
 
   // ✅ Zod validation errors
   if (err instanceof ZodError) {
@@ -28,7 +38,7 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // ✅ PostgreSQL unique constraint violation (e.g., duplicate email)
+  // ✅ PostgreSQL unique constraint violation
   if (err.code === '23505') {
     let message = 'Duplicate entry. Record already exists.';
     if (err.detail?.includes('email')) {
@@ -44,7 +54,7 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // ✅ PostgreSQL foreign key constraint violation
+  // ✅ Foreign key violation
   if (err.code === '23503') {
     return res.status(400).json({
       success: false,
@@ -52,7 +62,7 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // ✅ Custom app-defined errors
+  // ✅ Custom error handling
   if (err instanceof CustomError) {
     return res.status(err.statusCode || 500).json({
       success: false,
@@ -60,7 +70,7 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // ❌ Fallback: Unknown/unexpected error
+  // ❌ Unknown or unexpected error
   return res.status(500).json({
     success: false,
     message: 'Internal Server Error.',

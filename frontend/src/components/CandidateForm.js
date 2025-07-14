@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
-// ✅ Import shared schema for consistent validation
 import { candidateSchema } from '../validation/candidateSchema';
 import { toast } from 'react-toastify';
-// import CustomError from '../utils/customError'; // Removed: Defined but never used.
+import { useAuth } from '../hooks/useAuth';
 
-// Define status options directly in the component or from a shared constant
 const STATUS_OPTIONS = [
   'applied',
   'screening',
@@ -15,17 +13,9 @@ const STATUS_OPTIONS = [
   'rejected',
 ];
 
-/**
- * Reusable form component for creating and updating candidate records.
- * Handles form state, client-side Zod validation, and API interactions.
- *
- * @param {Object} props
- * @param {Object} [props.initial] - Initial candidate data for editing. If null, it's a create form.
- * @param {Function} props.onClose - Callback function to close the form/modal.
- * @param {Function} props.onSubmitSuccess - Callback function to run after successful form submission.
- */
 const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
-  // Initialize form state with initial data or default empty values
+  const { user, loading: authLoading } = useAuth();
+
   const [form, setForm] = useState(
     initial ?? {
       name: '',
@@ -33,39 +23,31 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
       phone: '',
       position: '',
       skills: '',
-      experience_years: '', // Zod will coerce this to number
+      experience_years: '',
       status: 'applied',
       notes: '',
     }
   );
 
-  const [errors, setErrors] = useState({}); // State to hold validation errors
-  const [loading, setLoading] = useState(false); // State for submission loading status
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  // Effect to update form if initial data changes (e.g., when opening form for different candidate)
   useEffect(() => {
     if (initial) {
-      // Ensure experience_years is a string for input type="number" value prop
       setForm({
         ...initial,
         experience_years: initial.experience_years !== null ? String(initial.experience_years) : '',
-        // Notes can be null from backend, ensure it's an empty string for textarea
         notes: initial.notes || '',
       });
     } else {
-      // Reset form if initial is null (for create mode)
       setForm({
         name: '', email: '', phone: '', position: '', skills: '',
         experience_years: '', status: 'applied', notes: '',
       });
     }
-    setErrors({}); // Clear errors on initial data change
+    setErrors({});
   }, [initial]);
 
-
-  /**
-   * Handles input changes, including a specific clean-up for experience_years.
-   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -74,79 +56,67 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
     }));
   };
 
-  /**
-   * Performs real-time validation on blur using Zod's .pick() method for individual fields.
-   * @param {string} field - The name of the field to validate.
-   */
   const handleBlur = async (field) => {
     try {
-      // Use parseAsync for async validation (e.g., if you later add async checks)
       await candidateSchema.pick({ [field]: true }).parseAsync({ [field]: form[field] });
-      setErrors((prev) => ({ ...prev, [field]: '' })); // Clear error for this field
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     } catch (e) {
-      // ZodError issues will have 'path' and 'message'
       const msg = e?.issues?.[0]?.message || 'Invalid input';
-      setErrors((prev) => ({ ...prev, [field]: msg })); // Set error message for this field
+      setErrors((prev) => ({ ...prev, [field]: msg }));
     }
   };
 
-  /**
-   * Handles form submission, performing full Zod validation and API call.
-   * @param {Event} e - The form submission event.
-   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrors({}); // Clear previous errors on new submission attempt
+    setErrors({});
+
+    if (!user && !authLoading) {
+      toast.error('You must be logged in to submit candidates.');
+      console.warn('🚫 Unauthorized submission attempt');
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Validate the entire form data against the shared schema
-      // Zod's parseAsync will automatically handle type coercion (e.g., experience_years from string to number)
       const parsedData = await candidateSchema.parseAsync(form);
 
       if (initial) {
-        // Update existing candidate
         await API.put(`/candidates/${initial.id}`, parsedData);
         toast.success('✅ Candidate updated successfully!');
       } else {
-        // Create new candidate
         await API.post('/candidates', parsedData);
         toast.success('🎉 Candidate added successfully!');
-        // Reset form for new entry after successful creation
         setForm({
           name: '', email: '', phone: '', position: '', skills: '',
           experience_years: '', status: 'applied', notes: '',
         });
       }
 
-      onSubmitSuccess(); // Call success callback (e.g., to refresh list or close modal)
+      onSubmitSuccess();
     } catch (err) {
       if (err?.name === 'ZodError') {
-        // Handle Zod validation errors from client-side validation
         const zodErrors = {};
         const messages = ['Please correct the following errors:'];
 
         err.issues.forEach(({ message, path }) => {
-          const field = path[0]; // Get the field name
+          const field = path[0];
           zodErrors[field] = message;
           messages.push(`• ${message}`);
         });
 
-        setErrors(zodErrors); // Update state to display errors next to fields
+        setErrors(zodErrors);
         toast.error(messages.join('\n'), {
-          autoClose: false, // Keep toast open until user closes it
-          style: { whiteSpace: 'pre-line' }, // Preserve newlines in toast message
+          autoClose: false,
+          style: { whiteSpace: 'pre-line' },
         });
       } else if (err?.response?.data?.message) {
-        // Handle custom errors from backend (e.g., "Unauthorized")
         toast.error(`Error: ${err.response.data.message}`);
       } else {
-        // Fallback for unexpected errors (network, server down, etc.)
         console.error('🔥 Form submission error:', err);
-        // Log to backend for unhandled client-side errors
         API.post('/logs/frontend-error', {
           context: 'CandidateForm Submission',
-          message: err.message || 'An unknown error occurred during form submission.',
+          message: err.message || 'An unknown error occurred.',
           stack: err.stack,
           url: window.location.href,
           method: initial ? 'PUT' : 'POST',
@@ -157,13 +127,12 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         toast.error('An unexpected error occurred. Please try again.');
       }
     } finally {
-      setLoading(false); // Always stop loading, regardless of success or failure
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="candidate-form" noValidate> {/* Added noValidate */}
-      {/* Name Field */}
+    <form onSubmit={handleSubmit} className="candidate-form" noValidate>
       <label htmlFor="candidate-name">
         Name<span className="required-star">*</span>
         <input
@@ -180,7 +149,6 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         {errors.name && <small id="name-error" role="alert" className="error-message">{errors.name}</small>}
       </label>
 
-      {/* Email Field */}
       <label htmlFor="candidate-email">
         Email<span className="required-star">*</span>
         <input
@@ -198,7 +166,6 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         {errors.email && <small id="email-error" role="alert" className="error-message">{errors.email}</small>}
       </label>
 
-      {/* Phone Field */}
       <label htmlFor="candidate-phone">
         Phone (Optional)
         <input
@@ -216,7 +183,6 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         {errors.phone && <small id="phone-error" role="alert" className="error-message">{errors.phone}</small>}
       </label>
 
-      {/* Position Field */}
       <label htmlFor="candidate-position">
         Position<span className="required-star">*</span>
         <input
@@ -233,7 +199,6 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         {errors.position && <small id="position-error" role="alert" className="error-message">{errors.position}</small>}
       </label>
 
-      {/* Skills Field */}
       <label htmlFor="candidate-skills">
         Skills (comma-separated, Optional)
         <input
@@ -250,7 +215,6 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         {errors.skills && <small id="skills-error" role="alert" className="error-message">{errors.skills}</small>}
       </label>
 
-      {/* Years of Experience Field */}
       <label htmlFor="candidate-experience">
         Years of Experience (Optional)
         <input
@@ -270,7 +234,6 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         {errors.experience_years && <small id="experience-years-error" role="alert" className="error-message">{errors.experience_years}</small>}
       </label>
 
-      {/* Status Select Field */}
       <label htmlFor="candidate-status">
         Status<span className="required-star">*</span>
         <select
@@ -285,14 +248,13 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         >
           {STATUS_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
-              {opt.charAt(0).toUpperCase() + opt.slice(1)} {/* Capitalize first letter */}
+              {opt.charAt(0).toUpperCase() + opt.slice(1)}
             </option>
           ))}
         </select>
         {errors.status && <small id="status-error" role="alert" className="error-message">{errors.status}</small>}
       </label>
 
-      {/* Notes Textarea */}
       <label htmlFor="candidate-notes">
         Notes (Optional)
         <textarea
@@ -309,9 +271,8 @@ const CandidateForm = ({ initial, onClose, onSubmitSuccess }) => {
         {errors.notes && <small id="notes-error" role="alert" className="error-message">{errors.notes}</small>}
       </label>
 
-      {/* Form Actions */}
       <div className="form-actions">
-        <button type="submit" disabled={loading} className="btn btn-primary">
+        <button type="submit" disabled={loading || authLoading} className="btn btn-primary">
           {loading ? (initial ? 'Updating...' : 'Adding...') : initial ? 'Update Candidate' : 'Add Candidate'}
         </button>
         <button type="button" onClick={onClose} disabled={loading} className="btn btn-secondary">

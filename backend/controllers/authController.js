@@ -4,30 +4,42 @@ const jwt = require('jsonwebtoken');
 const CustomError = require('../utils/customError');
 const { loginSchema, registerSchema } = require('../schemas/authSchema');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const generateToken = (userId) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET not defined in environment variables.');
   }
 
+  console.log('🔐 Generating JWT for user ID:', userId);
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: '7d',
   });
 };
 
 const sendAuthCookie = (res, token) => {
+  console.log(`🍪 Sending cookie | Secure: ${isProduction} | SameSite: ${isProduction ? 'None' : 'Lax'}`);
   res.cookie('token', token, {
     httpOnly: true,
-    secure: true,         // 🔐 Required for cross-origin (Render + Vercel)
-    sameSite: 'None',     // 🌍 Required for cross-origin cookies
+    secure: isProduction,
+    sameSite: isProduction ? 'None' : 'Lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
-  console.log('✅ Auth cookie sent.');
+};
+
+const clearAuthCookie = (res) => {
+  console.log(`🧹 Clearing cookie | Secure: ${isProduction} | SameSite: ${isProduction ? 'None' : 'Lax'}`);
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'None' : 'Lax',
+  });
 };
 
 const register = async (req, res, next) => {
-  try {
-    console.log('📥 Register request received');
+  console.log('📥 Register request received');
 
+  try {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
       console.error('❌ Validation failed:', parsed.error.format());
@@ -36,12 +48,12 @@ const register = async (req, res, next) => {
 
     const { username, full_name, email, password } = parsed.data;
 
-    const userExists = await pool.query(
+    const existing = await pool.query(
       'SELECT 1 FROM recruiters WHERE email = $1 OR username = $2',
       [email, username]
     );
 
-    if (userExists.rows.length > 0) {
+    if (existing.rows.length > 0) {
       console.warn('⚠️ User already exists:', email, username);
       return next(new CustomError('User with that email or username already exists.', 409));
     }
@@ -74,9 +86,9 @@ const register = async (req, res, next) => {
 };
 
 const login = async (req, res, next) => {
-  try {
-    console.log('📥 Login request received');
+  console.log('📥 Login request received');
 
+  try {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       console.error('❌ Validation failed:', parsed.error.format());
@@ -85,20 +97,20 @@ const login = async (req, res, next) => {
 
     const { email, password } = parsed.data;
 
-    const recruiterResult = await pool.query(
+    const recruiterRes = await pool.query(
       'SELECT * FROM recruiters WHERE email = $1',
       [email]
     );
 
-    const recruiter = recruiterResult.rows[0];
+    const recruiter = recruiterRes.rows[0];
     if (!recruiter) {
-      console.warn('⚠️ Recruiter not found with email:', email);
+      console.warn('⚠️ No user found with email:', email);
       return next(new CustomError('Invalid credentials.', 401));
     }
 
     const isMatch = await bcrypt.compare(password, recruiter.password_hash);
     if (!isMatch) {
-      console.warn('⚠️ Password mismatch for email:', email);
+      console.warn('⚠️ Incorrect password for email:', email);
       return next(new CustomError('Invalid credentials.', 401));
     }
 
@@ -121,9 +133,10 @@ const login = async (req, res, next) => {
 };
 
 const getMe = async (req, res, next) => {
-  try {
-    console.log('📤 /me route hit. User ID from token:', req.userId);
+  console.log('📤 GET /me hit | userId from token:', req.userId);
+  console.log('📦 Cookies on /me request:', req.cookies);
 
+  try {
     if (!req.userId) {
       return next(new CustomError('Unauthorized: No user ID found.', 401));
     }
@@ -134,7 +147,6 @@ const getMe = async (req, res, next) => {
     );
 
     const user = result.rows[0];
-
     if (!user) {
       return next(new CustomError('User not found.', 404));
     }
@@ -147,13 +159,8 @@ const getMe = async (req, res, next) => {
 };
 
 const logout = async (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: true,       // 🔐 Same as cookie set
-    sameSite: 'None',
-  });
-
-  console.log('👋 Logout: cookie cleared.');
+  clearAuthCookie(res);
+  console.log('👋 Logout completed');
   res.status(200).json({ message: 'Logged out successfully.' });
 };
 

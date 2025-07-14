@@ -16,16 +16,37 @@ const {
   loginSchema,
 } = require('../schemas/authSchema');
 
+// ✅ Log incoming request method and route
+router.use((req, res, next) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
+  console.log(`📨 [AUTH] ${req.method} ${req.originalUrl} from ${ip}`);
+  next();
+});
+
 // ✅ Register recruiter
-router.post('/register', authLimiter, validate(registerSchema), register);
+router.post(
+  '/register',
+  authLimiter,
+  validate(registerSchema),
+  register
+);
 
 // ✅ Login recruiter
-router.post('/login', authLimiter, validate(loginSchema), login);
+router.post(
+  '/login',
+  authLimiter,
+  validate(loginSchema),
+  login
+);
 
-// ✅ Get current recruiter info
+// ✅ Get current recruiter info (requires auth)
 router.get('/me', authMiddleware, getMe);
 
-// ✅ Logout recruiter (stateless logout by clearing cookie)
+// ✅ Logout recruiter (clears cookie, no auth needed)
 router.post('/logout', logout);
+
+// 🔧 [Optional Future Routes]
+// router.post('/refresh-token', ...)
+// router.post('/forgot-password', ...)
 
 module.exports = router;

@@ -30,7 +30,6 @@ const CandidateSummaryCards = () => {
         const res = await API.get('/candidates/summary');
         let data = res.data;
 
-        // ✅ Support both { applied: 1, ... } or { data: { applied: 1, ... } }
         if (data && typeof data === 'object' && 'data' in data && typeof data.data === 'object') {
           data = data.data;
         }
@@ -39,16 +38,26 @@ const CandidateSummaryCards = () => {
           throw new Error('Invalid response format from backend.');
         }
 
-        // 🔁 Normalize into expected structure
+        // Normalize summary
         const normalized = STATUS_OPTIONS.reduce(
           (acc, status) => ({ ...acc, [status]: data[status] || 0 }),
-          { total: data.total || 0 }
+          { total: data.total || Object.values(data).reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0) }
         );
 
         setSummary(normalized);
       } catch (err) {
         console.error('❌ Failed to fetch summary from backend:', err);
         setError('Failed to load candidate summary. Please try again later.');
+
+        // Optional: send error to backend logger
+        await API.post('/logs/frontend-error', {
+          context: 'CandidateSummaryCards Fetch Summary',
+          message: err.message,
+          stack: err.stack,
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+        });
+
         setSummary({});
       } finally {
         setLoading(false);
@@ -66,13 +75,19 @@ const CandidateSummaryCards = () => {
     <div className="candidate-summary-cards-container" aria-label="Candidate Summary Overview">
       <h2 className="summary-title">Candidate Pipeline Summary</h2>
       <div className="summary-cards-grid">
-        <div className="summary-card total" tabIndex="0" role="status">
+        <div className="summary-card total" tabIndex="0" role="status" aria-label="Total candidates">
           <span className="card-label">Total Candidates:</span>
           <span className="card-value">{summary.total ?? 0}</span>
         </div>
 
         {STATUS_OPTIONS.map((status) => (
-          <div key={status} className={`summary-card status-${status}`} tabIndex="0" role="status">
+          <div
+            key={status}
+            className={`summary-card status-${status}`}
+            tabIndex="0"
+            role="status"
+            aria-label={`${formatStatus(status)} candidates`}
+          >
             <span className="card-label">{formatStatus(status)}:</span>
             <span className="card-value">{summary[status] ?? 0}</span>
           </div>
