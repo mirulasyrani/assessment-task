@@ -9,7 +9,7 @@ export const setAuthContextLogout = (fn) => {
 let isLoggingOut = false;
 
 const BACKEND_BASE_URL =
-  process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'https://assessment-task-1.onrender.com';
+  (process.env.REACT_APP_API_URL || 'https://assessment-task-1.onrender.com').replace(/\/$/, '');
 
 const API = axios.create({
   baseURL: `${BACKEND_BASE_URL}/api`,
@@ -19,55 +19,26 @@ const API = axios.create({
   },
 });
 
-// 🔧 Helper to log frontend errors
-const logFrontendError = async ({
-  context = 'Unknown context',
-  message = 'No message provided',
-  stack = '',
-  response_status,
-  response_data,
-  url = '',
-  method = '',
-}) => {
-  try {
-    await fetch(`${BACKEND_BASE_URL}/api/logs/frontend-error`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        context,
-        message,
-        stack,
-        response_status,
-        response_data,
-        url,
-        method,
-        timestamp: new Date().toISOString(),
-      }),
-    });
-  } catch (logErr) {
-    console.error('[LOG ERROR] Failed to log frontend error:', logErr);
-  }
-};
+// Request logging
+API.interceptors.request.use((config) => {
+  console.log('➡️ API Request:', config.method.toUpperCase(), config.url);
+  return config;
+});
 
+// Response logging
 API.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ API Response:', response.config.url, response.status);
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     const method = originalRequest?.method?.toUpperCase() || 'UNKNOWN';
     const url = originalRequest?.url || window.location.href;
 
     if (!error.response) {
-      toast.error('[API Error] Network error. Please check your connection.');
+      toast.error('[API Error] Network error. Check connection.');
       console.error(`[${method}] ${url}: Network error`, error);
-
-      await logFrontendError({
-        context: 'API.js interceptor - network error',
-        message: error.message,
-        stack: error.stack,
-        url,
-        method,
-      });
-
       return Promise.reject(error);
     }
 
@@ -86,16 +57,6 @@ API.interceptors.response.use(
     } else if (status !== 404) {
       toast.error(`[API Error] ${msg}`);
       console.error(`[${method}] ${url}: ${msg}`);
-
-      await logFrontendError({
-        context: 'API.js interceptor',
-        message: msg,
-        response_status: status,
-        response_data: error.response?.data,
-        url,
-        method,
-        stack: error.stack,
-      });
     }
 
     return Promise.reject(error);
