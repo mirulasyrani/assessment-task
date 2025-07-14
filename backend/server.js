@@ -18,17 +18,19 @@ const allowedOrigins = [
 ];
 
 // ✅ CORS config for cookie-based auth
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`⛔ Blocked by CORS: ${origin}`);
-      callback(new Error(`Not allowed by CORS: ${origin}`));
-    }
-  },
-  credentials: true, // 🔑 Required for sending cookies cross-origin
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⛔ Blocked by CORS: ${origin}`);
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    },
+    credentials: true,
+  })
+);
 
 // ✅ Middleware
 app.use(express.json());
@@ -43,12 +45,40 @@ app.use((req, res, next) => {
 
 // ✅ Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/candidates', candidateRoutes); // Optional if you need candidate routes
+app.use('/api/candidates', candidateRoutes); // Optional if needed
 
-// ✅ Frontend error logger route (optional)
+// ✅ Frontend error logger route (with validation and safe logging)
 app.post('/api/logs/frontend-error', (req, res) => {
-  console.error('🛑 Frontend error log:', req.body);
-  res.status(200).json({ message: 'Logged' });
+  const {
+    context,
+    message,
+    url,
+    method,
+    response_status,
+    response_data,
+    timestamp,
+    stack,
+  } = req.body || {};
+
+  if (!context || !message) {
+    console.warn('⚠️ Invalid frontend error log payload:', req.body);
+    return res
+      .status(400)
+      .json({ message: 'Invalid log payload. "context" and "message" are required.' });
+  }
+
+  console.error('🛑 Frontend error log:', {
+    context,
+    message,
+    url,
+    method,
+    response_status,
+    response_data,
+    timestamp,
+    stack,
+  });
+
+  res.status(200).json({ message: 'Logged successfully' });
 });
 
 // ✅ 404 handler for unmatched routes
@@ -68,5 +98,7 @@ app.use((err, req, res, next) => {
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
+  console.log(
+    `🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`
+  );
 });
