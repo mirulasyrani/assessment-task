@@ -72,7 +72,13 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setLoading(true);
     try {
-      const res = await API.post('/auth/register', userData);
+      // Remove confirmPassword before sending to backend
+      const { confirmPassword, ...payload } = userData;
+
+      console.log('Register API URL:', process.env.REACT_APP_BACKEND_URL + '/auth/register');
+      console.log('Register payload:', payload);
+
+      const res = await API.post('/auth/register', payload);
       if (res.data?.user) {
         setUser(res.data.user);
         return res.data.user;
@@ -81,6 +87,15 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('❌ Register error:', err);
+
+      if (err.response) {
+        console.error('Response data:', err.response.data);
+        console.error('Response status:', err.response.status);
+        console.error('Response headers:', err.response.headers);
+      } else {
+        console.error('Error message:', err.message);
+      }
+
       throw err;
     } finally {
       setLoading(false);
