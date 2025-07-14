@@ -18,9 +18,12 @@ const allowedOrigins = [
   'http://localhost:3000',
 ].filter(Boolean); // remove any null or undefined
 
-// ✅ CORS config with credentials and dynamic origin
+console.log('✅ Allowed CORS origins:', allowedOrigins);
+
+// ✅ CORS config with credentials and dynamic origin + logging
 const corsOptions = {
   origin: function (origin, callback) {
+    console.log('CORS origin:', origin);
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -46,6 +49,11 @@ app.use((req, res, next) => {
   console.log(`➡️ ${req.method} ${req.originalUrl} from IP: ${req.ip}`);
   console.log('🍪 Cookies:', req.cookies || {});
   next();
+});
+
+// ✅ Test CORS route for quick debugging (optional)
+app.get('/api/test-cors', cors(corsOptions), (req, res) => {
+  res.json({ message: 'CORS works!' });
 });
 
 // ✅ API routes
