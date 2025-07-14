@@ -53,7 +53,7 @@ const register = async (req, res, next) => {
     const { username, full_name, email, password } = parsed.data;
 
     const existingUser = await pool.query(
-      'SELECT 1 FROM recruiters WHERE email = $1 OR username = $2',
+      'SELECT 1 FROM public.recruiters WHERE email = $1 OR username = $2',
       [email, username]
     );
 
@@ -65,7 +65,7 @@ const register = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const result = await pool.query(
-      `INSERT INTO recruiters (username, full_name, email, password_hash)
+      `INSERT INTO public.recruiters (username, full_name, email, password_hash)
        VALUES ($1, $2, $3, $4)
        RETURNING id, username, full_name, email, created_at`,
       [username, full_name, email, hashedPassword]
@@ -103,7 +103,7 @@ const login = async (req, res, next) => {
     const { email, password } = parsed.data;
 
     const recruiterRes = await pool.query(
-      'SELECT * FROM recruiters WHERE email = $1',
+      'SELECT * FROM public.recruiters WHERE email = $1',
       [email]
     );
 
@@ -147,7 +147,7 @@ const getMe = async (req, res, next) => {
     }
 
     const result = await pool.query(
-      'SELECT id, username, full_name, email, created_at FROM recruiters WHERE id = $1',
+      'SELECT id, username, full_name, email, created_at FROM public.recruiters WHERE id = $1',
       [req.userId]
     );
 
